@@ -19,6 +19,8 @@
   --f-display:'Suez One','David',Georgia,serif; --f-body:'Assistant',system-ui,-apple-system,'Segoe UI',sans-serif;
   color-scheme:dark;
 }
+[hidden]{display:none!important}
+*{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--iron);color:var(--ink);font-family:var(--f-body);overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 #game{position:fixed;inset:0}
 #gl{display:block;width:100%;height:100%;touch-action:none;outline:none}
@@ -163,7 +165,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gilt);outline-o
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="three.min.js"></script>
 <script>
 (function(){
 'use strict';
@@ -200,7 +202,7 @@ Object.assign(sun.shadow.camera,{left:-42,right:42,top:42,bottom:-42,near:1,far:
 sun.shadow.bias=-0.0006;scene.add(sun);scene.add(sun.target);
 
 /* ---------- textures ---------- */
-function canvasTex(size,draw,repeat){const c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d');draw(x,size);const t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;t.minFilter=THREE.LinearMipmapLinearFilter;t.encoding=THREE.sRGBEncoding;t.anisotropy=4;if(repeat){t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(repeat,repeat);}t.userData.canvas=c;return t;}
+function canvasTex(size,draw,repeat){const c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d');draw(x,size);const t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;t.minFilter=THREE.LinearMipmapLinearFilter;t.encoding=THREE.sRGBEncoding;t.anisotropy=4;if(repeat){t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(repeat,repeat);}(t.userData=t.userData||{}).canvas=c;return t;}
 function noise(x,s,base,amt){x.fillStyle=base;x.fillRect(0,0,s,s);const img=x.getImageData(0,0,s,s),d=img.data;for(let i=0;i<d.length;i+=4){const n=(Math.random()-.5)*amt;d[i]+=n;d[i+1]+=n;d[i+2]+=n;}x.putImageData(img,0,0);}
 function stones(x,s,base,mortar,rows,cols,amt){noise(x,s,base,amt);const rh=s/rows,cw=s/cols;for(let r=0;r<rows;r++){const off=(r%2)*cw/2;for(let c=-1;c<=cols;c++){const sx=c*cw+off;x.fillStyle=`rgba(${Math.random()<.5?'255,255,255':'0,0,0'},${Math.random()*.12})`;x.fillRect(sx,r*rh,cw,rh);x.fillStyle=mortar;x.fillRect(sx,r*rh,2,rh);}x.fillStyle=mortar;x.fillRect(0,r*rh,s,2);}}
 const MATS=[
@@ -285,7 +287,7 @@ function drawFlag(x,w,h,f){
   }
   x.restore();
 }
-function flagTexture(f){const c=document.createElement('canvas');c.width=256;c.height=170;drawFlag(c.getContext('2d'),256,170,f);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;t.userData.canvas=c;return t;}
+function flagTexture(f){const c=document.createElement('canvas');c.width=256;c.height=170;drawFlag(c.getContext('2d'),256,170,f);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;(t.userData=t.userData||{}).canvas=c;return t;}
 const playerFlagTex=flagTexture(S.flag);
 const enemyFlag={c1:'#1d1b1b',c2:'#7d1d1d',c3:'#c9c3b5',pattern:'saltire',emblem:'none'};
 const enemyFlagTex=flagTexture(enemyFlag);
