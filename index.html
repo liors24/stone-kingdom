@@ -7,11 +7,22 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#141519">
+<meta name="description" content="ממלכת האבן – משחק חינמי מימי הביניים בתלת־ממד: בונים טירות, מגייסים צבא, כובשים מבצרים ומעצבים דגל משלך. עובד במחשב, באנדרואיד ובאייפון.">
+<link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="ממלכת האבן">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ממלכת האבן">
+<meta property="og:description" content="בנה טירות, גייס צבא וכבוש את הממלכה. משחק חינמי בדפדפן.">
+<meta property="og:image" content="https://liors24.github.io/stone-kingdom/banner/banner-1200x630.png">
+<meta property="og:url" content="https://liors24.github.io/stone-kingdom/">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="manifest.webmanifest">
 <title>ממלכת האבן</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Suez+One&family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
+@font-face{font-family:'Suez One';src:url(fonts/SuezOne-Regular.ttf) format('truetype');font-display:swap}
+@font-face{font-family:'Assistant';src:url(fonts/Assistant.ttf) format('truetype');font-weight:200 800;font-display:swap}
 /* Layout: full-bleed 3D world; HUD as forged-iron plaques pinned to the screen corners, gilt for wealth, blood-red for war */
 :root{
   --iron:#141519; --plate:#211f1c; --plate-2:#2d2924; --edge:#4c4337; --gilt:#d9a441; --gilt-dim:#8a6829;
@@ -62,6 +73,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gilt);outline-o
 .tab small{font-family:var(--f-body);font-size:10px;font-weight:600;opacity:.7}
 .tab[aria-pressed="true"]{background:rgba(217,164,65,.14);border-color:var(--gilt-dim);color:var(--gilt)}
 #panel{pointer-events:auto;width:100%;box-sizing:border-box;max-height:min(46vh,380px);overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:10px}
+#panel>*{flex-shrink:0}
 #panel h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:15px;color:var(--gilt);letter-spacing:.02em}
 .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .scroller{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
@@ -117,6 +129,34 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gilt);outline-o
 #help ul b{color:var(--ink)}
 #err{position:fixed;inset:0;display:grid;place-items:center;text-align:center;padding:24px;font-size:16px}
 @media (max-width:420px){.cards{grid-template-columns:1fr}.card{flex-direction:row;align-items:center;flex-wrap:wrap}.card .st{flex:1 1 100%}}
+
+/* phone held sideways */
+@media (orientation:landscape) and (max-height:540px){
+  #realm{padding:6px 9px;gap:4px;max-width:44vw}
+  #realmName{font-size:15px}
+  #motto{display:none}
+  .chip{font-size:12px;padding:1px 7px}
+  #mini{width:84px;height:84px}
+  .icoBtn{height:30px;min-width:30px;padding:0 8px;font-size:12px}
+  #toasts{top:calc(env(safe-area-inset-top,0px) + 10px);width:min(340px,calc(100vw - 440px))}
+  .toast{font-size:13px;padding:6px 10px}
+  .toast.big{font-size:16px}
+  #dock{left:auto;right:calc(env(safe-area-inset-right,0px) + 8px);transform:none;width:min(440px,calc(100vw - 200px - env(safe-area-inset-left,0px)))}
+  #tabs{max-width:none}
+  .tab{padding:6px 4px;font-size:14px}
+  .tab small{display:none}
+  #panel{max-height:calc(100vh - 160px);max-height:calc(100dvh - 160px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+  #joy{bottom:calc(env(safe-area-inset-bottom,0px) + 14px);width:100px;height:100px}
+  #joyK{width:42px;height:42px;margin:-21px 0 0 -21px}
+  #help .box{max-height:94vh;max-height:94dvh;max-width:560px}
+  #help .box .logo{display:none}
+  .cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #flagPrev{width:150px;height:100px}
+  #panel .hint{display:none}
+  #panel{gap:8px;padding:8px 10px}
+}
+body.shot #top,body.shot #dock,body.shot #toasts,body.shot #joy,body.shot #ov{display:none!important}
+#help .logo{width:72px;height:72px;border-radius:16px;align-self:center;box-shadow:0 4px 14px rgba(0,0,0,.5)}
 @media (prefers-reduced-motion:reduce){.toast{animation:none}}
 </style>
 </head>
@@ -151,6 +191,38 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gilt);outline-o
 
 <div id="help" hidden>
   <div class="box plate">
+    <svg class="logo" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="lg-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2620"/><stop offset="1" stop-color="#121216"/></linearGradient>
+    <linearGradient id="lg-gilt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2cf7a"/><stop offset=".55" stop-color="#d9a441"/><stop offset="1" stop-color="#9c7228"/></linearGradient>
+    <linearGradient id="lg-field" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b55b0"/><stop offset="1" stop-color="#16306e"/></linearGradient>
+    <linearGradient id="lg-stone" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9d3c4"/></linearGradient>
+    <clipPath id="lg-sh"><path d="M256 118 L396 152 L396 268 C396 352 334 408 256 440 C178 408 116 352 116 268 L116 152 Z"/></clipPath>
+  </defs>
+  <rect width="512" height="512" rx="0" fill="url(#lg-bg)"/>
+  <circle cx="256" cy="282" r="196" fill="#d9a441" opacity=".07"/>
+  <!-- crown -->
+  <path d="M190 104 L176 46 L218 80 L256 30 L294 80 L336 46 L322 104 Z" fill="url(#lg-gilt)" stroke="#5a3f12" stroke-width="5" stroke-linejoin="round"/>
+  <circle cx="176" cy="44" r="9" fill="url(#lg-gilt)" stroke="#5a3f12" stroke-width="4"/>
+  <circle cx="256" cy="28" r="10" fill="url(#lg-gilt)" stroke="#5a3f12" stroke-width="4"/>
+  <circle cx="336" cy="44" r="9" fill="url(#lg-gilt)" stroke="#5a3f12" stroke-width="4"/>
+  <circle cx="256" cy="86" r="8" fill="#a3302a"/>
+  <!-- shield -->
+  <g clip-path="url(#lg-sh)">
+    <rect x="100" y="100" width="320" height="360" fill="url(#lg-field)"/>
+    <rect x="232" y="100" width="48" height="360" fill="url(#lg-gilt)"/>
+    <rect x="100" y="236" width="320" height="44" fill="url(#lg-gilt)"/>
+  </g>
+  <path d="M256 118 L396 152 L396 268 C396 352 334 408 256 440 C178 408 116 352 116 268 L116 152 Z" fill="none" stroke="url(#lg-gilt)" stroke-width="16" stroke-linejoin="round"/>
+  <path d="M256 118 L396 152 L396 268 C396 352 334 408 256 440 C178 408 116 352 116 268 L116 152 Z" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="3" transform="translate(0 0)"/>
+  <!-- tower -->
+  <g stroke="#2a2418" stroke-width="5" stroke-linejoin="round">
+    <path d="M206 360 L206 228 L194 228 L194 192 L218 192 L218 208 L240 208 L240 192 L272 192 L272 208 L294 208 L294 192 L318 192 L318 228 L306 228 L306 360 Z" fill="url(#lg-stone)"/>
+    <path d="M236 360 L236 314 A20 20 0 0 1 276 314 L276 360 Z" fill="#16306e"/>
+    <rect x="248" y="248" width="16" height="30" rx="8" fill="#16306e"/>
+  </g>
+  <path d="M206 300 H306 M206 262 H230 M282 262 H306" stroke="#b9b2a2" stroke-width="3"/>
+</svg>
     <h2>ממלכת האבן</h2>
     <p>בנה טירה מאבן, עץ ושיש, גייס צבא וכבוש את חמשת המבצרים של האויב. כל קרב, כל כיבוש וכל אבן בחומה מגדילים את אוצר הממלכה.</p>
     <ul>
@@ -609,7 +681,7 @@ function drawMini(){const W=mini.width,sc=W/(WORLD*2);const P=(v)=>(v+WORLD)*sc;
 /* ---------- overlay ---------- */
 const ov=$('#ov'),ox=ov.getContext('2d');let dpr=1;const pv=new THREE.Vector3();
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();dpr=Math.min(window.devicePixelRatio||1,2);ov.width=w*dpr;ov.height=h*dpr;ov.style.width=w+'px';ov.style.height=h+'px';}
-addEventListener('resize',resize);
+addEventListener('resize',resize);if(window.visualViewport)visualViewport.addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,250));
 function drawOverlay(dt){const W=innerWidth,H=innerHeight;ox.setTransform(dpr,0,0,dpr,0,0);ox.clearRect(0,0,W,H);
   for(const u of units){if(!u.alive)continue;if(u.team==='p'&&u.hp>=u.maxHp-.5)continue;if(u===hero)continue;pv.set(u.x,u.h,u.z).project(camera);if(pv.z>1||Math.abs(pv.x)>1.1||Math.abs(pv.y)>1.1)continue;
     const sx=(pv.x+1)/2*W,sy=(1-pv.y)/2*H,bw=u.type==='knight'?34:28;ox.fillStyle='rgba(0,0,0,.65)';ox.fillRect(sx-bw/2-1,sy-1,bw+2,6);ox.fillStyle=u.team==='e'?(u.raider?'#ff7a3a':'#d23d32'):'#6fc25a';ox.fillRect(sx-bw/2,sy,bw*Math.max(0,u.hp/u.maxHp),4);}
@@ -639,6 +711,7 @@ hero=spawnUnit('hero','p',hs.x,hs.z);hero.face=Math.PI*.8;
 S.army.slice(0,armyCap()).forEach((t,i)=>{const s=freeSpotNear(hero.x+(i%4)-1.5,hero.z+2+Math.floor(i/4));spawnUnit(t,'p',s.x,s.z);});
 CAMPS.forEach((c,i)=>{if(!S.camps[i])spawnGarrison(i);});
 cam.target.set(hero.x,0,hero.z);
+if(location.hash==='#shot'){cam.dist=20;cam.pitch=.4;cam.yaw=.38;cam.target.set(6.5,1.5,-5);document.body.classList.add('shot');S.helpSeen=true;}
 refreshFlag();resize();setTab('hero');hud();
 if(!S.helpSeen)$('#help').hidden=false;else toast('ברוך שובך ל'+(S.name||'ממלכה'),'big');
 
