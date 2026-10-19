@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#141519">
+<link rel="manifest" href="manifest.webmanifest">
+<title>ממלכת האבן</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Suez+One&family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: full-bleed 3D world; HUD as forged-iron plaques pinned to the screen corners, gilt for wealth, blood-red for war */
+:root{
+  --iron:#141519; --plate:#211f1c; --plate-2:#2d2924; --edge:#4c4337; --gilt:#d9a441; --gilt-dim:#8a6829;
+  --blood:#a3302a; --ink:#f0e7d4; --muted:#a99c86; --good:#74b25e;
+  --f-display:'Suez One','David',Georgia,serif; --f-body:'Assistant',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0;background:var(--iron);color:var(--ink);font-family:var(--f-body);overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+#game{position:fixed;inset:0}
+#gl{display:block;width:100%;height:100%;touch-action:none;outline:none}
+#ov{position:fixed;inset:0;pointer-events:none}
+button{font-family:var(--f-body);color:var(--ink);cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
+.plate{background:linear-gradient(180deg,var(--plate-2),var(--plate));border:1px solid var(--edge);box-shadow:0 2px 0 rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05);border-radius:6px}
+
+/* top */
+#top{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);right:calc(env(safe-area-inset-right,0px) + 8px);left:calc(env(safe-area-inset-left,0px) + 8px);display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none;direction:rtl}
+#realm{pointer-events:auto;display:flex;flex-direction:column;gap:6px;padding:8px 10px;min-width:0;max-width:62vw}
+#realm .id{display:flex;align-items:center;gap:9px;min-width:0}
+#miniFlag{width:42px;height:28px;border:1px solid #000;border-radius:2px;flex:none;box-shadow:0 1px 0 var(--gilt-dim)}
+#realmName{font-family:var(--f-display);font-size:17px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+#motto{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:13px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid var(--edge);font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--gilt);box-shadow:inset -2px -2px 0 rgba(0,0,0,.25)}
+.chip.army i{border-radius:1px;background:#8fa3c0;transform:rotate(45deg)}
+.chip.tax{color:var(--gilt)}
+#hpWrap{height:6px;background:rgba(0,0,0,.5);border-radius:3px;overflow:hidden;border:1px solid #000}
+#hpBar{height:100%;width:100%;background:linear-gradient(90deg,#c9463d,#e0703f);transition:width .2s}
+#side{pointer-events:auto;display:flex;flex-direction:column;align-items:flex-start;gap:6px;direction:ltr}
+#side .btns{display:flex;gap:6px}
+.icoBtn{height:34px;min-width:34px;padding:0 10px;font-weight:700;font-size:13px}
+#mini{width:112px;height:112px;display:block;border-radius:6px;border:1px solid var(--edge);background:#2c3d22;box-shadow:0 2px 0 rgba(0,0,0,.45)}
+
+/* toasts */
+#toasts{position:fixed;top:calc(env(safe-area-inset-top,0px) + 132px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;width:min(440px,calc(100vw - 32px));direction:rtl}
+.toast{background:rgba(20,18,16,.92);border:1px solid var(--gilt-dim);padding:8px 14px;border-radius:6px;font-weight:600;font-size:14px;text-align:center;animation:tin .25s ease-out;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.toast.war{border-color:var(--blood);color:#ffd6cf}
+.toast.big{font-family:var(--f-display);font-size:19px;font-weight:400;border-color:var(--gilt);color:var(--gilt)}
+@keyframes tin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+
+/* dock */
+#dock{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;width:min(580px,calc(100vw - 16px));pointer-events:none;direction:rtl}
+#tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;pointer-events:auto;width:100%;max-width:420px;box-sizing:border-box}
+.tab{background:transparent;border:1px solid transparent;border-radius:4px;padding:7px 4px 6px;font-family:var(--f-display);font-size:15px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:1px}
+.tab small{font-family:var(--f-body);font-size:10px;font-weight:600;opacity:.7}
+.tab[aria-pressed="true"]{background:rgba(217,164,65,.14);border-color:var(--gilt-dim);color:var(--gilt)}
+#panel{pointer-events:auto;width:100%;box-sizing:border-box;max-height:min(46vh,380px);overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:10px}
+#panel h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:15px;color:var(--gilt);letter-spacing:.02em}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.scroller{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.pc{flex:none;background:rgba(0,0,0,.3);border:1px solid var(--edge);border-radius:5px;padding:6px 10px;font-weight:700;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:58px}
+.pc small{font-weight:600;font-size:10px;color:var(--muted)}
+.pc[aria-pressed="true"]{border-color:var(--gilt);background:rgba(217,164,65,.16);color:var(--gilt)}
+.sw{flex:none;width:52px;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:0;padding:2px;font-size:10px;font-weight:700;color:var(--muted)}
+.sw span.t{width:40px;height:40px;border-radius:4px;border:2px solid #000;background-size:cover;image-rendering:pixelated;box-shadow:0 1px 0 rgba(255,255,255,.08)}
+.sw[aria-pressed="true"] span.t{border-color:var(--gilt);box-shadow:0 0 0 2px rgba(217,164,65,.35)}
+.sw[aria-pressed="true"]{color:var(--gilt)}
+.btn{background:linear-gradient(180deg,#3a342c,#2a2621);border:1px solid var(--edge);border-radius:5px;padding:7px 12px;font-weight:700;font-size:13px}
+.btn.gold{background:linear-gradient(180deg,#d9a441,#a87a26);color:#20170a;border-color:#6d4f19}
+.btn.red{background:linear-gradient(180deg,#a3302a,#7a211c);border-color:#4d1410}
+.btn[aria-pressed="true"]{border-color:var(--gilt);color:var(--gilt)}
+.btn:disabled{opacity:.45;cursor:default}
+.hint{font-size:12px;color:var(--muted);line-height:1.45}
+.cost{font-size:13px;font-weight:700;color:var(--gilt);font-variant-numeric:tabular-nums;margin-inline-start:auto}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.card{background:rgba(0,0,0,.28);border:1px solid var(--edge);border-radius:5px;padding:8px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.card b{font-family:var(--f-display);font-weight:400;font-size:15px}
+.card .st{font-size:11px;color:var(--muted);line-height:1.35}
+.camp{display:flex;align-items:center;gap:8px;padding:7px 8px;border:1px solid var(--edge);border-radius:5px;background:rgba(0,0,0,.25)}
+.camp .nm{flex:1;min-width:0}
+.camp .nm b{display:block;font-size:14px}
+.camp .nm span{font-size:11px;color:var(--muted)}
+.camp.won{border-color:var(--gilt-dim)}
+.camp.won .nm b{color:var(--gilt)}
+.lvl{font-family:var(--f-display);font-size:13px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--blood);flex:none}
+.camp.won .lvl{background:var(--gilt-dim)}
+#flagPrev{width:180px;height:120px;border:2px solid #000;border-radius:2px;box-shadow:0 2px 0 var(--gilt-dim)}
+.fld{display:flex;flex-direction:column;gap:4px;flex:1;min-width:140px}
+.fld label{font-size:11px;font-weight:700;color:var(--muted)}
+.fld input{background:rgba(0,0,0,.4);border:1px solid var(--edge);border-radius:4px;color:var(--ink);padding:7px 8px;font-family:var(--f-body);font-size:15px}
+.tinct{width:28px;height:28px;border-radius:50%;border:2px solid #000;padding:0}
+.tinct[aria-pressed="true"]{box-shadow:0 0 0 2px var(--gilt)}
+.chipb{background:rgba(0,0,0,.3);border:1px solid var(--edge);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700}
+.chipb[aria-pressed="true"]{border-color:var(--gilt);color:var(--gilt)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;text-align:center}
+.stats div{background:rgba(0,0,0,.28);border-radius:4px;padding:6px 2px}
+.stats b{display:block;font-family:var(--f-display);font-weight:400;font-size:18px;color:var(--gilt);font-variant-numeric:tabular-nums}
+.stats span{font-size:10px;color:var(--muted)}
+
+/* joystick */
+#joy{position:fixed;left:calc(env(safe-area-inset-left,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 104px);width:116px;height:116px;border-radius:50%;background:radial-gradient(circle,rgba(0,0,0,.15),rgba(0,0,0,.4));border:2px solid rgba(217,164,65,.35);touch-action:none}
+#joyK{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e9bd62,#8a6829);border:1px solid #2a1d08;box-shadow:0 3px 6px rgba(0,0,0,.5)}
+
+/* help */
+#help{position:fixed;inset:0;background:rgba(8,8,10,.72);display:grid;place-items:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));direction:rtl;z-index:5}
+#help .box{max-width:440px;width:100%;padding:18px 18px 16px;display:flex;flex-direction:column;gap:10px;max-height:86vh;overflow:auto;box-sizing:border-box}
+#help h2{margin:0;font-family:var(--f-display);font-weight:400;font-size:26px;color:var(--gilt);text-wrap:balance}
+#help p{margin:0;font-size:14px;line-height:1.55;color:var(--ink)}
+#help ul{margin:0;padding-inline-start:18px;font-size:13px;line-height:1.6;color:var(--muted)}
+#help ul b{color:var(--ink)}
+#err{position:fixed;inset:0;display:grid;place-items:center;text-align:center;padding:24px;font-size:16px}
+@media (max-width:420px){.cards{grid-template-columns:1fr}.card{flex-direction:row;align-items:center;flex-wrap:wrap}.card .st{flex:1 1 100%}}
+@media (prefers-reduced-motion:reduce){.toast{animation:none}}
+</style>
+</head>
+<body>
+
+<div id="game"><canvas id="gl" tabindex="0" aria-label="עולם המשחק"></canvas></div>
+<canvas id="ov"></canvas>
+
+<div id="top">
+  <div id="realm" class="plate">
+    <div class="id"><canvas id="miniFlag" width="84" height="56"></canvas><div style="min-width:0"><div id="realmName">ממלכת האבן</div><div id="motto"></div></div></div>
+    <div class="chips"><span class="chip" title="זהב"><i></i><span id="gold">0</span></span><span class="chip army" title="צבא"><i></i><span id="armyN">0</span></span><span class="chip tax" id="tax">+0 / 10ש׳</span></div>
+    <div id="hpWrap" title="חיי המלך"><div id="hpBar"></div></div>
+  </div>
+  <div id="side">
+    <div class="btns"><button class="plate icoBtn" id="fsBtn" aria-label="מסך מלא">מסך מלא</button><button class="plate icoBtn" id="helpBtn" aria-label="עזרה">?</button></div>
+    <canvas id="mini" width="224" height="224" aria-label="מפה"></canvas>
+  </div>
+</div>
+<div id="toasts" aria-live="polite"></div>
+<div id="joy" hidden><div id="joyK"></div></div>
+
+<div id="dock">
+  <div id="panel" class="plate" hidden></div>
+  <div id="tabs" class="plate" role="toolbar">
+    <button class="tab" data-tab="hero" aria-pressed="true">גיבור<small>תנועה וקרב</small></button>
+    <button class="tab" data-tab="build" aria-pressed="false">בנייה<small>טירות</small></button>
+    <button class="tab" data-tab="army" aria-pressed="false">צבא<small>גיוס וכיבוש</small></button>
+    <button class="tab" data-tab="realm" aria-pressed="false">ממלכה<small>דגל ושם</small></button>
+  </div>
+</div>
+
+<div id="help" hidden>
+  <div class="box plate">
+    <h2>ממלכת האבן</h2>
+    <p>בנה טירה מאבן, עץ ושיש, גייס צבא וכבוש את חמשת המבצרים של האויב. כל קרב, כל כיבוש וכל אבן בחומה מגדילים את אוצר הממלכה.</p>
+    <ul>
+      <li><b>תנועה:</b> ג׳ויסטיק בטלפון, או W A S D במחשב. אפשר גם להקיש על הקרקע.</li>
+      <li><b>מצלמה:</b> גרירה מסובבת, שתי אצבעות או גלגלת לזום. Q / E לסיבוב.</li>
+      <li><b>בנייה:</b> בחר חלק וחומר, והקש על הקרקע או על בלוק. R מסובב, X מוחק, Z מבטל.</li>
+      <li><b>קרב:</b> המלך והחיילים תוקפים לבד. בלשונית צבא שולחים את הצבא למבצר.</li>
+      <li><b>הכנסה:</b> מסים כל 10 שניות. הם גדלים עם גודל הטירה, הדגלים והמבצרים שכבשת.</li>
+      <li><b>פשיטות:</b> האויב יתקוף את הטירה. חומות עוצרות אותו עד שהוא שובר אותן.</li>
+    </ul>
+    <button class="btn gold" id="helpGo">לבנות את הממלכה</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+if(!window.THREE){document.body.insertAdjacentHTML('beforeend','<div id="err">לא הצלחתי לטעון את מנוע התלת־ממד. נסה לרענן את הדף.</div>');return;}
+const $=s=>document.querySelector(s);
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const TAU=Math.PI*2;
+let seed=1337; const srand=()=>{seed=(seed*16807)%2147483647;return (seed-1)/2147483646;};
+const isTouch=matchMedia('(pointer:coarse)').matches;
+const SAVE_KEY='stone-kingdom-v1';
+const WORLD=104;
+
+/* ---------- state ---------- */
+const S={gold:300,name:'ממלכת האבן',motto:'באבן ובחרב',flag:{c1:'#1f3f8a',c2:'#d9a441',c3:'#f0ece0',pattern:'cross',emblem:'tower'},
+  blocks:new Map(),flags:[],camps:[false,false,false,false,false],discovered:[false,false,false,false,false],army:['foot','foot','foot','archer'],
+  placed:0,kills:0,milestone:0,mat:1,piece:0,rot:0,order:'follow',orderCamp:-1,helpSeen:false};
+
+/* ---------- renderer ---------- */
+const canvas=$('#gl');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,isTouch?1.6:2));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x9db6c6);
+scene.fog=new THREE.Fog(0x9db6c6,70,175);
+const camera=new THREE.PerspectiveCamera(48,1,0.3,400);
+const cam={yaw:0.65,pitch:0.92,dist:30,target:new THREE.Vector3(2,0,2)};
+scene.add(new THREE.HemisphereLight(0xd9e6f2,0x4f5a33,0.72));
+const sun=new THREE.DirectionalLight(0xfff0d2,1.05);
+sun.castShadow=true;sun.shadow.mapSize.set(isTouch?1024:2048,isTouch?1024:2048);
+Object.assign(sun.shadow.camera,{left:-42,right:42,top:42,bottom:-42,near:1,far:160});
+sun.shadow.bias=-0.0006;scene.add(sun);scene.add(sun.target);
+
+/* ---------- textures ---------- */
+function canvasTex(size,draw,repeat){const c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d');draw(x,size);const t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;t.minFilter=THREE.LinearMipmapLinearFilter;t.encoding=THREE.sRGBEncoding;t.anisotropy=4;if(repeat){t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(repeat,repeat);}t.userData.canvas=c;return t;}
+function noise(x,s,base,amt){x.fillStyle=base;x.fillRect(0,0,s,s);const img=x.getImageData(0,0,s,s),d=img.data;for(let i=0;i<d.length;i+=4){const n=(Math.random()-.5)*amt;d[i]+=n;d[i+1]+=n;d[i+2]+=n;}x.putImageData(img,0,0);}
+function stones(x,s,base,mortar,rows,cols,amt){noise(x,s,base,amt);const rh=s/rows,cw=s/cols;for(let r=0;r<rows;r++){const off=(r%2)*cw/2;for(let c=-1;c<=cols;c++){const sx=c*cw+off;x.fillStyle=`rgba(${Math.random()<.5?'255,255,255':'0,0,0'},${Math.random()*.12})`;x.fillRect(sx,r*rh,cw,rh);x.fillStyle=mortar;x.fillRect(sx,r*rh,2,rh);}x.fillStyle=mortar;x.fillRect(0,r*rh,s,2);}}
+const MATS=[
+ {id:'wood',name:'עץ',color:'#8a5a2e',cost:1,draw:(x,s)=>{noise(x,s,'#8a5a2e',26);for(let i=0;i<40;i++){x.fillStyle='rgba(60,35,15,.35)';x.fillRect(Math.random()*s,Math.random()*s,1,rnd(6,20));}x.fillStyle='#4f3218';for(let i=0;i<s;i+=16)x.fillRect(i,0,2,s);x.fillStyle='#3e2711';x.fillRect(5,10,3,3);x.fillRect(21,44,3,3);x.fillRect(37,22,3,3);x.fillRect(53,52,3,3);}},
+ {id:'stone',name:'אבן',color:'#8b8984',cost:2,draw:(x,s)=>stones(x,s,'#8d8a84','#5a5853',4,2,22)},
+ {id:'cobble',name:'אבן שדה',color:'#7d7a70',cost:2,draw:(x,s)=>{noise(x,s,'#5b5850',18);for(let i=0;i<26;i++){const r=rnd(5,9);x.fillStyle=`hsl(40,${rnd(4,10)}%,${rnd(42,58)}%)`;x.beginPath();x.ellipse(Math.random()*s,Math.random()*s,r,r*rnd(.7,1),Math.random()*3,0,TAU);x.fill();}}},
+ {id:'brick',name:'לבנים',color:'#9a4a33',cost:2,draw:(x,s)=>stones(x,s,'#9a4a33','#cbbda6',8,4,30)},
+ {id:'sand',name:'אבן חול',color:'#c8ab76',cost:2,draw:(x,s)=>stones(x,s,'#c8ab76','#977d52',3,2,20)},
+ {id:'plaster',name:'טיח ועץ',color:'#e2dacb',cost:2,draw:(x,s)=>{noise(x,s,'#e3dbcb',14);x.fillStyle='#5a3a1e';x.fillRect(0,0,s,5);x.fillRect(0,s-5,s,5);x.fillRect(0,0,5,s);x.fillRect(s-5,0,5,s);x.strokeStyle='#5a3a1e';x.lineWidth=5;x.beginPath();x.moveTo(4,s-4);x.lineTo(s-4,4);x.stroke();}},
+ {id:'thatch',name:'קש',color:'#c19a45',cost:1,draw:(x,s)=>{noise(x,s,'#a98432',20);for(let i=0;i<260;i++){x.strokeStyle=Math.random()<.5?'rgba(230,196,110,.6)':'rgba(100,75,25,.5)';x.lineWidth=1;const px=Math.random()*s,py=Math.random()*s;x.beginPath();x.moveTo(px,py);x.lineTo(px+rnd(-2,2),py+rnd(6,12));x.stroke();}}},
+ {id:'slate',name:'אבן כהה',color:'#4b4e55',cost:3,draw:(x,s)=>stones(x,s,'#4c4f57','#2c2e33',5,3,18)},
+ {id:'marble',name:'שיש',color:'#ece9e3',cost:4,draw:(x,s)=>{noise(x,s,'#ece8e1',8);x.strokeStyle='rgba(150,140,128,.7)';for(let i=0;i<4;i++){x.lineWidth=rnd(.6,1.6);x.beginPath();x.moveTo(rnd(0,s),0);x.bezierCurveTo(rnd(0,s),rnd(0,s),rnd(0,s),rnd(0,s),rnd(0,s),s);x.stroke();}x.fillStyle='rgba(0,0,0,.08)';x.fillRect(0,0,s,2);x.fillRect(0,0,2,s);}},
+ {id:'glass',name:'ויטראז׳',color:'#2c6fb5',cost:5,draw:(x,s)=>{const cs=['#2c6fb5','#b53a2c','#d9b43a','#3f8f4f','#6b3fa0'];const g=16;for(let i=0;i<s;i+=g)for(let j=0;j<s;j+=g){x.fillStyle=cs[(Math.random()*cs.length)|0];x.fillRect(i,j,g,g);}x.fillStyle='#222';for(let i=0;i<=s;i+=g){x.fillRect(i-1,0,2,s);x.fillRect(0,i-1,s,2);}},opts:{transparent:true,opacity:.82}},
+ {id:'gold',name:'זהב',color:'#d6a21c',cost:10,draw:(x,s)=>{noise(x,s,'#d4a020',30);x.fillStyle='rgba(255,240,180,.5)';x.fillRect(4,4,s-8,3);x.fillRect(4,4,3,s-8);x.fillStyle='rgba(90,60,0,.4)';x.fillRect(4,s-7,s-8,3);x.fillRect(s-7,4,3,s-8);},opts:{metalness:.75,roughness:.32}},
+];
+const MI={};MATS.forEach((m,i)=>{MI[m.id]=i;m.tex=canvasTex(64,m.draw);m.mat=new THREE.MeshStandardMaterial(Object.assign({map:m.tex,roughness:.9,metalness:0},m.opts||{}));});
+
+/* ---------- ground & nature ---------- */
+const grassTex=canvasTex(128,(x,s)=>{noise(x,s,'#5d8a3c',34);for(let i=0;i<500;i++){x.fillStyle=Math.random()<.5?'rgba(40,80,25,.5)':'rgba(140,175,80,.45)';x.fillRect(Math.random()*s,Math.random()*s,1,rnd(2,4));}},60);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(260,260),new THREE.MeshLambertMaterial({map:grassTex}));
+ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;ground.name='ground';scene.add(ground);
+const dirtTex=canvasTex(128,(x,s)=>{noise(x,s,'#8a7350',30);for(let i=0;i<120;i++){x.fillStyle='rgba(60,45,30,.4)';x.fillRect(Math.random()*s,Math.random()*s,2,2);}},6);
+function dirtPatch(x,z,r){const m=new THREE.Mesh(new THREE.CircleGeometry(r,40),new THREE.MeshLambertMaterial({map:dirtTex,transparent:true,opacity:.92}));m.rotation.x=-Math.PI/2;m.position.set(x,.02,z);m.receiveShadow=true;scene.add(m);}
+dirtPatch(3,0,15);
+const grid=new THREE.GridHelper(40,40,0xd9a441,0xd9a441);grid.material.transparent=true;grid.material.opacity=.18;grid.position.y=.03;grid.visible=false;scene.add(grid);
+
+const CAMPS=[
+ {name:'מחנה השודדים',x:34,z:28,lvl:1,comp:['foot','foot','foot','archer']},
+ {name:'מאורת הזאבים',x:-42,z:32,lvl:2,comp:['foot','foot','foot','foot','archer','archer']},
+ {name:'מצודת הגשר',x:48,z:-40,lvl:3,comp:['foot','foot','foot','foot','archer','archer','archer','knight']},
+ {name:'מבצר העורב השחור',x:-52,z:-48,lvl:4,comp:['foot','foot','foot','foot','foot','archer','archer','archer','archer','knight','knight','knight']},
+ {name:'טירת הברון',x:6,z:-80,lvl:5,comp:['foot','foot','foot','foot','foot','foot','archer','archer','archer','archer','archer','knight','knight','knight','knight','knight']},
+];
+CAMPS.forEach(c=>dirtPatch(c.x,c.z,c.lvl>=4?12:9));
+
+const trees=[];
+(function(){for(let i=0;i<460;i++){const x=srand()*WORLD*2-WORLD,z=srand()*WORLD*2-WORLD;if(Math.hypot(x-3,z)<24)continue;if(CAMPS.some(c=>Math.hypot(x-c.x,z-c.z)<15))continue;trees.push({x,z,k:srand()<.6?0:1,s:.8+srand()*.6,alive:true});}})();
+const pineG=new THREE.ConeGeometry(1.1,2.8,7);pineG.translate(0,2.2,0);
+const oakG=new THREE.IcosahedronGeometry(1.35,0);oakG.translate(0,2.4,0);
+const trunkG=new THREE.CylinderGeometry(.16,.22,1.2,6);trunkG.translate(0,.6,0);
+const pineM=new THREE.MeshLambertMaterial({color:0x2f5a2c,flatShading:true});
+const oakM=new THREE.MeshLambertMaterial({color:0x4d7a32,flatShading:true});
+const trunkM=new THREE.MeshLambertMaterial({color:0x5a3d22});
+const pines=new THREE.InstancedMesh(pineG,pineM,trees.length),oaks=new THREE.InstancedMesh(oakG,oakM,trees.length),trunks=new THREE.InstancedMesh(trunkG,trunkM,trees.length);
+[pines,oaks,trunks].forEach(m=>{m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false;scene.add(m);});
+const _m4=new THREE.Matrix4(),_q=new THREE.Quaternion(),_v=new THREE.Vector3(),_s=new THREE.Vector3();
+function rebuildTrees(){let p=0,o=0,t=0;for(const tr of trees){if(!tr.alive)continue;_q.setFromAxisAngle(new THREE.Vector3(0,1,0),tr.x*3.1);_s.set(tr.s,tr.s,tr.s);_m4.compose(_v.set(tr.x,0,tr.z),_q,_s);trunks.setMatrixAt(t++,_m4);if(tr.k===0)pines.setMatrixAt(p++,_m4);else oaks.setMatrixAt(o++,_m4);}pines.count=p;oaks.count=o;trunks.count=t;[pines,oaks,trunks].forEach(m=>m.instanceMatrix.needsUpdate=true);}
+rebuildTrees();
+(function(){const g=new THREE.DodecahedronGeometry(.7,0);const m=new THREE.InstancedMesh(g,new THREE.MeshLambertMaterial({color:0x7c7a74,flatShading:true}),70);let n=0;for(let i=0;i<70;i++){const x=srand()*WORLD*2-WORLD,z=srand()*WORLD*2-WORLD;if(Math.hypot(x-3,z)<18)continue;const s=.5+srand()*1.3;_q.setFromEuler(new THREE.Euler(srand()*3,srand()*3,0));_m4.compose(_v.set(x,.2*s,z),_q,_s.set(s,s*.7,s));m.setMatrixAt(n++,_m4);}m.count=n;m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false;scene.add(m);})();
+
+/* ---------- heraldry ---------- */
+const TINCT=[['#d9a441','זהב'],['#f0ece0','כסף'],['#a3302a','אדום'],['#1f3f8a','כחול'],['#2f6b3a','ירוק'],['#5b2d6e','סגול'],['#1d1b1b','שחור'],['#c46a1f','כתום']];
+const PATTERNS=[['plain','חלק'],['cross','צלב'],['saltire','צלב אלכסוני'],['fess','פס'],['pale','עמוד'],['chevron','שברון'],['quarterly','רבעים'],['bend','אלכסון'],['chief','ראש'],['stripes','פסים'],['bordure','מסגרת']];
+const EMBLEMS=[['none','ללא'],['tower','מגדל'],['crown','כתר'],['swords','חרבות'],['star','כוכב'],['moon','סהר'],['tree','עץ'],['key','מפתח'],['sun','שמש']];
+function drawFlag(x,w,h,f){
+  x.save();x.clearRect(0,0,w,h);x.fillStyle=f.c1;x.fillRect(0,0,w,h);x.fillStyle=f.c2;x.strokeStyle=f.c2;x.lineCap='butt';
+  const t=h*.2;
+  switch(f.pattern){
+    case 'cross':x.fillRect(w*.36-t/2,0,t,h);x.fillRect(0,h/2-t/2,w,t);break;
+    case 'saltire':x.lineWidth=t;x.beginPath();x.moveTo(0,0);x.lineTo(w,h);x.moveTo(w,0);x.lineTo(0,h);x.stroke();break;
+    case 'fess':x.fillRect(0,h/3,w,h/3);break;
+    case 'pale':x.fillRect(w/3,0,w/3,h);break;
+    case 'chevron':x.lineWidth=t;x.beginPath();x.moveTo(-5,h*1.02);x.lineTo(w/2,h*.38);x.lineTo(w+5,h*1.02);x.stroke();break;
+    case 'quarterly':x.fillRect(0,0,w/2,h/2);x.fillRect(w/2,h/2,w/2,h/2);break;
+    case 'bend':x.lineWidth=t*1.3;x.beginPath();x.moveTo(0,0);x.lineTo(w,h);x.stroke();break;
+    case 'chief':x.fillRect(0,0,w,h*.3);break;
+    case 'stripes':for(let i=0;i<7;i++)if(i%2)x.fillRect(0,i*h/7,w,h/7+.5);break;
+    case 'bordure':x.lineWidth=h*.14;x.strokeRect(h*.07,h*.07,w-h*.14,h-h*.14);break;
+  }
+  const cx=f.pattern==='cross'?w*.36:w/2,cy=f.pattern==='chief'?h*.6:h/2,r=h*.27;
+  x.fillStyle=f.c3;x.strokeStyle=f.c3;x.shadowColor='rgba(0,0,0,.35)';x.shadowOffsetY=h*.012;x.shadowOffsetX=h*.012;
+  const P=(pts)=>{x.beginPath();pts.forEach((p,i)=>i?x.lineTo(cx+p[0]*r,cy+p[1]*r):x.moveTo(cx+p[0]*r,cy+p[1]*r));x.closePath();x.fill();};
+  switch(f.emblem){
+    case 'tower':P([[-.65,1],[-.65,-.55],[-.8,-.55],[-.8,-.95],[-.5,-.95],[-.5,-.75],[-.15,-.75],[-.15,-.95],[.15,-.95],[.15,-.75],[.5,-.75],[.5,-.95],[.8,-.95],[.8,-.55],[.65,-.55],[.65,1]]);x.shadowColor='transparent';x.fillStyle=f.c1;x.beginPath();x.moveTo(cx-.22*r,cy+r);x.lineTo(cx-.22*r,cy+.35*r);x.arc(cx,cy+.35*r,.22*r,Math.PI,0);x.lineTo(cx+.22*r,cy+r);x.fill();break;
+    case 'crown':P([[-.9,.6],[-.95,-.55],[-.5,-.05],[0,-.85],[.5,-.05],[.95,-.55],[.9,.6]]);x.fillRect(cx-.9*r,cy+.7*r,1.8*r,.22*r);[[-.95,-.62],[0,-.92],[.95,-.62]].forEach(p=>{x.beginPath();x.arc(cx+p[0]*r,cy+p[1]*r,.13*r,0,TAU);x.fill();});break;
+    case 'swords':for(const s of[-1,1]){x.save();x.translate(cx,cy);x.rotate(s*Math.PI/4);x.fillRect(-.07*r,-1.05*r,.14*r,1.55*r);x.fillRect(-.38*r,.42*r,.76*r,.12*r);x.fillRect(-.06*r,.54*r,.12*r,.36*r);x.beginPath();x.arc(0,.96*r,.12*r,0,TAU);x.fill();x.restore();}break;
+    case 'star':{const pts=[];for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?.42:1;pts.push([Math.cos(a)*rr,Math.sin(a)*rr]);}P(pts);break;}
+    case 'moon':x.save();x.beginPath();x.rect(0,0,w,h);x.arc(cx+.42*r,cy-.12*r,.82*r,0,TAU,true);x.clip('evenodd');x.beginPath();x.arc(cx,cy,r,0,TAU);x.fill();x.restore();break;
+    case 'tree':x.fillRect(cx-.12*r,cy+.4*r,.24*r,.6*r);P([[0,-1],[.55,-.3],[.25,-.3],[.75,.45],[-.75,.45],[-.25,-.3],[-.55,-.3]]);break;
+    case 'key':x.lineWidth=.2*r;x.beginPath();x.arc(cx-.55*r,cy,.32*r,0,TAU);x.stroke();x.fillRect(cx-.25*r,cy-.09*r,1.2*r,.18*r);x.fillRect(cx+.55*r,cy,.14*r,.4*r);x.fillRect(cx+.8*r,cy,.14*r,.32*r);break;
+    case 'sun':x.beginPath();x.arc(cx,cy,.5*r,0,TAU);x.fill();for(let i=0;i<12;i++){const a=i*TAU/12;x.beginPath();x.moveTo(cx+Math.cos(a-.13)*.6*r,cy+Math.sin(a-.13)*.6*r);x.lineTo(cx+Math.cos(a)*1.02*r,cy+Math.sin(a)*1.02*r);x.lineTo(cx+Math.cos(a+.13)*.6*r,cy+Math.sin(a+.13)*.6*r);x.fill();}break;
+  }
+  x.restore();
+}
+function flagTexture(f){const c=document.createElement('canvas');c.width=256;c.height=170;drawFlag(c.getContext('2d'),256,170,f);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;t.userData.canvas=c;return t;}
+const playerFlagTex=flagTexture(S.flag);
+const enemyFlag={c1:'#1d1b1b',c2:'#7d1d1d',c3:'#c9c3b5',pattern:'saltire',emblem:'none'};
+const enemyFlagTex=flagTexture(enemyFlag);
+const playerFlagMat=new THREE.MeshLambertMaterial({map:playerFlagTex,side:THREE.DoubleSide});
+const enemyFlagMat=new THREE.MeshLambertMaterial({map:enemyFlagTex,side:THREE.DoubleSide});
+function refreshFlag(){drawFlag(playerFlagTex.userData.canvas.getContext('2d'),256,170,S.flag);playerFlagTex.needsUpdate=true;const m=$('#miniFlag');drawFlag(m.getContext('2d'),m.width,m.height,S.flag);const p=$('#flagPrev');if(p)drawFlag(p.getContext('2d'),p.width,p.height,S.flag);$('#realmName').textContent=S.name||'ממלכה ללא שם';$('#motto').textContent=S.motto||'';}
+
+const waving=[];
+const poleG=new THREE.CylinderGeometry(.05,.06,3.2,6);poleG.translate(0,1.6,0);
+const poleM=new THREE.MeshLambertMaterial({color:0x3b2a1a});
+const finialG=new THREE.SphereGeometry(.1,8,6);
+const goldM=new THREE.MeshStandardMaterial({color:0xd9a441,metalness:.7,roughness:.35});
+function makeFlagPole(mat,h){const g=new THREE.Group();const p=new THREE.Mesh(poleG,poleM);p.scale.y=h/3.2;p.castShadow=true;g.add(p);const f=new THREE.Mesh(finialG,goldM);f.position.y=h+.05;g.add(f);
+  const cg=new THREE.PlaneGeometry(1.5,1,12,6);cg.translate(.75,0,0);const cloth=new THREE.Mesh(cg,mat);cloth.position.y=h-.55;cloth.castShadow=true;g.add(cloth);
+  const base=Float32Array.from(cg.attributes.position.array);const w={geo:cg,base,ph:Math.random()*6};waving.push(w);g.userData.wave=w;g.userData.cloth=cloth;return g;}
+function disposeFlagPole(g){const i=waving.indexOf(g.userData.wave);if(i>=0)waving.splice(i,1);scene.remove(g);}
+
+/* ---------- blocks ---------- */
+const CAP=9000;
+const boxG=new THREE.BoxGeometry(1,1,1);
+const bMesh=MATS.map((m,i)=>{const im=new THREE.InstancedMesh(boxG,m.mat,CAP);im.count=0;im.castShadow=true;im.receiveShadow=true;im.frustumCulled=false;im.userData.mat=i;im.userData.keys=[];scene.add(im);return im;});
+const K=(x,y,z)=>x+','+y+','+z;
+let cut=null;
+function rebuildBlocks(){const counts=bMesh.map(()=>0);bMesh.forEach(m=>m.userData.keys.length=0);
+  for(const [k,mi] of S.blocks){const a=k.split(',');const x=+a[0],y=+a[1],z=+a[2];
+    if(cut&&y>=cut.y&&Math.hypot(x+.5-cut.x,z+.5-cut.z)<cut.r)continue;
+    const im=bMesh[mi];if(counts[mi]>=CAP)continue;_m4.makeTranslation(x+.5,y+.5,z+.5);im.setMatrixAt(counts[mi],_m4);im.userData.keys[counts[mi]]=k;counts[mi]++;}
+  bMesh.forEach((m,i)=>{m.count=counts[i];m.instanceMatrix.needsUpdate=true;});}
+const solid=(x,z)=>S.blocks.has(K(x,0,z))||S.blocks.has(K(x,1,z));
+function blockedAt(x,z,r){if(Math.abs(x)>WORLD||Math.abs(z)>WORLD)return true;r=r||.3;return solid(Math.floor(x-r),Math.floor(z-r))||solid(Math.floor(x+r),Math.floor(z-r))||solid(Math.floor(x-r),Math.floor(z+r))||solid(Math.floor(x+r),Math.floor(z+r));}
+
+/* flags placed by player */
+const flagEnts=[];
+function addFlagEnt(x,y,z){const g=makeFlagPole(playerFlagMat,3.2);g.position.set(x+.5,y,z+.5);g.rotation.y=-cam.yaw+Math.PI/2;g.userData.cell=[x,y,z];scene.add(g);flagEnts.push(g);}
+
+/* ---------- pieces ---------- */
+const PIECES=[
+ {id:'block',name:'בלוק',cells:()=>[[0,0,0]]},
+ {id:'wall',name:'חומה',cells:()=>{const a=[];for(let x=-2;x<=2;x++)for(let y=0;y<3;y++)a.push([x,y,0]);for(const x of[-2,0,2])a.push([x,3,0]);return a;}},
+ {id:'gate',name:'שער',cells:()=>{const a=[];for(let x=-2;x<=2;x++)for(let y=0;y<4;y++)if(!(Math.abs(x)<=1&&y<=2))a.push([x,y,0]);for(const x of[-2,0,2])a.push([x,4,0]);return a;}},
+ {id:'tower',name:'מגדל',cells:()=>{const a=[];for(let y=0;y<6;y++)for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++){if(x===0&&z===0)continue;if(y<2&&x===0&&z===1)continue;a.push([x,y,z]);}for(const[x,z]of[[-1,-1],[1,-1],[-1,1],[1,1]])a.push([x,6,z]);return a;},flag:[0,6,0]},
+ {id:'keep',name:'מצודה',cells:()=>{const a=[];for(let x=-2;x<=2;x++)for(let z=-2;z<=2;z++){const ring=Math.abs(x)===2||Math.abs(z)===2;if(ring)for(let y=0;y<5;y++){if(z===2&&x===0&&y<2)continue;if(y===3&&(x===0||z===0)&&!(z===2&&x===0)){a.push([x,y,z,'glass']);continue;}a.push([x,y,z]);}a.push([x,5,z]);if(ring&&(x+z)%2===0)a.push([x,6,z]);}return a;},flag:[0,6,0]},
+ {id:'house',name:'בית',cells:()=>{const a=[];for(let x=-1;x<=1;x++)for(let z=-2;z<=1;z++){const ring=Math.abs(x)===1||z===-2||z===1;if(ring)for(let y=0;y<2;y++){if(x===0&&z===1)continue;a.push([x,y,z]);}a.push([x,2,z,'thatch']);if(x===0)a.push([x,3,z,'thatch']);}return a;}},
+ {id:'floor',name:'רצפה',cells:()=>{const a=[];for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)a.push([x,0,z]);return a;}},
+ {id:'pillar',name:'עמוד',cells:()=>[[0,0,0],[0,1,0],[0,2,0],[0,3,0]]},
+ {id:'flag',name:'דגל',cells:()=>[],flagOnly:true,cost:25},
+];
+function rotXZ(x,z,r){switch(r&3){case 1:return[z,-x];case 2:return[-x,-z];case 3:return[-z,x];default:return[x,z];}}
+function pieceCells(p,base,rot,mat){return p.cells().map(c=>{const[rx,rz]=rotXZ(c[0],c[2],rot);return{x:base.x+rx,y:base.y+c[1],z:base.z+rz,m:c[3]?MI[c[3]]:mat};});}
+
+/* ---------- units ---------- */
+const UT={
+ hero:{name:'המלך',hp:280,dmg:22,range:1.9,speed:6.4,cd:.55,cost:0},
+ foot:{name:'חייל רגלי',hp:90,dmg:10,range:1.6,speed:4.7,cd:.9,cost:40},
+ archer:{name:'קשת',hp:55,dmg:8,range:9,speed:4.7,cd:1.4,cost:55,ranged:true},
+ knight:{name:'אביר',hp:200,dmg:17,range:1.9,speed:7,cd:1,cost:120,mounted:true},
+};
+const G={body:new THREE.CylinderGeometry(.24,.33,.74,8),head:new THREE.SphereGeometry(.19,10,8),helm:new THREE.CylinderGeometry(.205,.215,.17,8),helmTop:new THREE.ConeGeometry(.21,.2,8),hood:new THREE.ConeGeometry(.24,.36,8),
+ shield:new THREE.BoxGeometry(.07,.44,.36),sword:new THREE.BoxGeometry(.05,.05,.62),bow:new THREE.TorusGeometry(.34,.025,4,12,Math.PI),
+ horse:new THREE.BoxGeometry(.44,.46,1.08),horseHead:new THREE.BoxGeometry(.22,.46,.3),leg:new THREE.BoxGeometry(.11,.52,.11),crown:new THREE.CylinderGeometry(.2,.18,.14,6,1,true),cape:new THREE.PlaneGeometry(.62,.85),
+ arrow:new THREE.CylinderGeometry(.018,.018,.7,4),spark:new THREE.BoxGeometry(.13,.13,.13)};
+G.arrow.rotateX(Math.PI/2);
+const M={skin:new THREE.MeshLambertMaterial({color:0xd9a77f}),steel:new THREE.MeshStandardMaterial({color:0x9aa0a8,metalness:.6,roughness:.4}),dark:new THREE.MeshStandardMaterial({color:0x3a3a3f,metalness:.5,roughness:.5}),
+ wood:new THREE.MeshLambertMaterial({color:0x6b4423}),horse:new THREE.MeshLambertMaterial({color:0x6a4a2e}),horseE:new THREE.MeshLambertMaterial({color:0x2a2420}),gold:goldM};
+const teamCols={p:'#2a55b5',e:'#7a1f1f'};const tm={};
+function teamMat(c){return tm[c]||(tm[c]=new THREE.MeshLambertMaterial({color:new THREE.Color(c)}));}
+function syncTeamColor(){teamCols.p=S.flag.c1==='#1d1b1b'||S.flag.c1==='#f0ece0'?S.flag.c2:S.flag.c1;const m=teamMat('P');m.color.set(teamCols.p);}
+teamMat('P');
+function buildUnit(type,team){
+  const g=new THREE.Group(),rig=new THREE.Group();g.add(rig);
+  const tmat=team==='p'?teamMat('P'):teamMat(teamCols.e);const metal=team==='p'?M.steel:M.dark;
+  const def=UT[type];const y0=def.mounted?.6:0;const add=(geo,mat,x,y,z,sh)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);if(sh!==false)m.castShadow=true;rig.add(m);return m;};
+  if(def.mounted){add(G.horse,team==='p'?M.horse:M.horseE,0,.72,0);add(G.horseHead,team==='p'?M.horse:M.horseE,0,1.02,.6).rotation.x=-.4;for(const[x,z]of[[-.15,-.4],[.15,-.4],[-.15,.4],[.15,.4]])add(G.leg,team==='p'?M.horse:M.horseE,x,.26,z,false);const cl=add(G.horse,tmat,0,.78,0,false);cl.scale.set(1.08,.55,.6);}
+  add(G.body,tmat,0,y0+.55);add(G.head,M.skin,0,y0+1.11);
+  if(type==='archer'){add(G.hood,tmat,0,y0+1.26);}
+  else if(type!=='hero'){add(G.helm,metal,0,y0+1.2);add(G.helmTop,metal,0,y0+1.38);}
+  const arm=new THREE.Group();arm.position.set(.3,y0+.72,0);rig.add(arm);
+  if(type==='archer'){const b=new THREE.Mesh(G.bow,M.wood);b.rotation.set(0,Math.PI/2,Math.PI/2);b.position.set(-.6,0,.22);arm.add(b);}
+  else{const s=new THREE.Mesh(G.sword,metal===M.dark?M.steel:M.steel);s.position.set(0,0,.3);arm.add(s);}
+  if(type==='foot'||type==='hero'){const sh=add(G.shield,tmat,-.34,y0+.6,.06);}
+  if(type==='hero'){const c=new THREE.Mesh(G.crown,M.gold);c.position.set(0,y0+1.31,0);rig.add(c);const cape=new THREE.Mesh(G.cape,playerFlagMat);cape.position.set(0,y0+.6,-.34);cape.rotation.x=.12;rig.add(cape);g.scale.setScalar(1.2);}
+  return{g,rig,arm};
+}
+const units=[];let hero=null;
+function spawnUnit(type,team,x,z,o){const def=UT[type];const lv=(o&&o.lvl)||1;const mul=team==='e'?1+.28*(lv-1):1;
+  const b=buildUnit(type,team);b.g.position.set(x,0,z);scene.add(b.g);
+  const u=Object.assign({type,team,def,x,z,face:0,hp:def.hp*mul,maxHp:def.hp*mul,dmg:def.dmg*mul,range:def.range,speed:def.speed,cd:def.cd,cdT:Math.random()*.5,alive:true,mesh:b.g,rig:b.rig,arm:b.arm,swing:0,walk:0,moving:false,stuckT:0,h:def.mounted?2.4:1.8},o||{});
+  if(type==='hero')u.h=2.3;units.push(u);return u;}
+
+/* ---------- particles, arrows, floating text ---------- */
+const sparkMats={};const sparks=[];
+function sparkMat(c){return sparkMats[c]||(sparkMats[c]=new THREE.MeshLambertMaterial({color:new THREE.Color(c)}));}
+function burst(x,y,z,color,n){for(let i=0;i<n;i++){let s=sparks.find(s=>!s.on);if(!s){if(sparks.length>180)return;s={m:new THREE.Mesh(G.spark,sparkMat(color))};scene.add(s.m);sparks.push(s);}s.on=true;s.m.visible=true;s.m.material=sparkMat(color);s.m.position.set(x+rnd(-.2,.2),y+rnd(-.2,.2),z+rnd(-.2,.2));s.v=new THREE.Vector3(rnd(-2.5,2.5),rnd(2,5),rnd(-2.5,2.5));s.t=rnd(.5,.9);}}
+const arrows=[];
+function shoot(u,foe){const m=new THREE.Mesh(G.arrow,M.wood);scene.add(m);const d=Math.hypot(foe.x-u.x,foe.z-u.z);arrows.push({m,sx:u.x,sz:u.z,tx:foe.x,tz:foe.z,d,t:0,dur:d/17+.05,foe,dmg:u.dmg*rnd(.85,1.15),src:u});}
+const floats=[];
+function floatText(x,y,z,text,color){floats.push({x,y,z,text,color:color||'#d9a441',t:0});}
+
+/* ---------- money ---------- */
+function addGold(n,x,z,label){S.gold=Math.max(0,Math.round(S.gold+n));if(x!==undefined)floatText(x,2.6,z,(n>=0?'+':'−')+Math.abs(Math.round(n))+(label?' '+label:''),n>=0?'#e8b84e':'#e0705f');hud();}
+function taxRate(){let t=4+Math.floor(S.blocks.size/20)+flagEnts.length;CAMPS.forEach((c,i)=>{if(S.camps[i])t+=c.lvl*7;});return t;}
+const MILES=[[50,60],[150,120],[400,250],[900,450],[2000,800],[4000,1500]];
+function checkMilestones(){while(S.milestone<MILES.length&&S.placed>=MILES[S.milestone][0]){const[n,r]=MILES[S.milestone];S.milestone++;S.gold+=r;toast(`אבן דרך: ${n} בלוקים נבנו · +${r} זהב`,'big');}}
+
+/* ---------- camps ---------- */
+const stakeG=new THREE.CylinderGeometry(.13,.15,2.1,5);stakeG.translate(0,1.05,0);
+const tentTex=canvasTex(64,(x,s)=>{x.fillStyle='#d8cdb2';x.fillRect(0,0,s,s);x.fillStyle='#7a1f1f';for(let i=0;i<s;i+=16)x.fillRect(i,0,8,s);},0);
+const tentG=new THREE.ConeGeometry(1.3,1.9,8,1,true);tentG.translate(0,.95,0);
+const tentM=new THREE.MeshLambertMaterial({map:tentTex,side:THREE.DoubleSide});
+const fireM=new THREE.MeshBasicMaterial({color:0xff8a2a});
+const stoneWallM=new THREE.MeshLambertMaterial({map:MATS[MI.slate].tex});
+function buildCamp(c,ci){const g=new THREE.Group();g.position.set(c.x,0,c.z);scene.add(g);c.group=g;
+  const R=c.lvl>=4?10:7;const n=Math.round(R*4.2);
+  if(c.lvl>=4){for(let i=0;i<8;i++){const a=i*TAU/8+TAU/16;if(i===2)continue;const w=new THREE.Mesh(new THREE.BoxGeometry(2*R*Math.sin(Math.PI/8)+.4,3.2,.9),stoneWallM);w.position.set(Math.sin(a)*R*Math.cos(Math.PI/8),1.6,Math.cos(a)*R*Math.cos(Math.PI/8));w.rotation.y=a;w.castShadow=true;w.receiveShadow=true;g.add(w);}
+    for(let i=0;i<8;i++){const a=i*TAU/8;const t=new THREE.Mesh(new THREE.CylinderGeometry(1,1.1,4.6,8),stoneWallM);t.position.set(Math.sin(a)*R,2.3,Math.cos(a)*R);t.castShadow=true;g.add(t);const r=new THREE.Mesh(new THREE.ConeGeometry(1.3,1.4,8),teamMat(teamCols.e));r.position.set(Math.sin(a)*R,5.3,Math.cos(a)*R);r.castShadow=true;g.add(r);}}
+  else{const im=new THREE.InstancedMesh(stakeG,M.wood,n);let k=0;for(let i=0;i<n;i++){const a=i*TAU/n;if(Math.abs(Math.atan2(Math.sin(a-.5),Math.cos(a-.5)))<.28)continue;_q.setFromEuler(new THREE.Euler(rnd(-.08,.08),0,rnd(-.08,.08)));_m4.compose(_v.set(Math.sin(a)*R,0,Math.cos(a)*R),_q,_s.set(1,rnd(.8,1.15),1));im.setMatrixAt(k++,_m4);}im.count=k;im.castShadow=true;im.frustumCulled=false;g.add(im);}
+  const tents=2+Math.min(c.lvl,3);for(let i=0;i<tents;i++){const a=i*TAU/tents+.3;const t=new THREE.Mesh(tentG,tentM);t.position.set(Math.sin(a)*R*.55,0,Math.cos(a)*R*.55);t.castShadow=true;g.add(t);}
+  const f=new THREE.Mesh(new THREE.ConeGeometry(.35,.7,6),fireM);f.position.y=.35;g.add(f);c.fire=f;
+  if(c.lvl===3){const tw=new THREE.Group();for(const[x,z]of[[-.7,-.7],[.7,-.7],[-.7,.7],[.7,.7]]){const l=new THREE.Mesh(new THREE.BoxGeometry(.2,4,.2),M.wood);l.position.set(x,2,z);l.castShadow=true;tw.add(l);}const p=new THREE.Mesh(new THREE.BoxGeometry(2,.25,2),M.wood);p.position.y=4;p.castShadow=true;tw.add(p);tw.position.set(-3,0,-3);g.add(tw);}
+  const pole=makeFlagPole(S.camps[ci]?playerFlagMat:enemyFlagMat,c.lvl>=4?6.5:4.2);pole.position.set(1.4,0,1.4);g.add(pole);c.pole=pole;}
+CAMPS.forEach(buildCamp);
+function spawnGarrison(ci){const c=CAMPS[ci];c.comp.forEach((t,i)=>{const a=i/c.comp.length*TAU;const r=t==='archer'?4.5:2.5+(i%3);const post={x:c.x+Math.sin(a)*r,z:c.z+Math.cos(a)*r};spawnUnit(t,'e',post.x,post.z,{camp:ci,post,lvl:c.lvl});});}
+function garrisonAlive(ci){return units.filter(u=>u.alive&&u.team==='e'&&u.camp===ci&&!u.raider);}
+function capture(ci){const c=CAMPS[ci];if(S.camps[ci])return;S.camps[ci]=true;c.pole.userData.cloth.material=playerFlagMat;
+  const reward=150*c.lvl;addGold(reward,c.x,c.z,'שלל');toast(`כבשת את ${c.name}! +${reward} זהב · המסים עלו`,'big');burst(c.x,3,c.z,'#d9a441',24);
+  if(S.order==='charge'&&S.orderCamp===ci){S.order='follow';S.orderCamp=-1;}
+  if(S.camps.every(Boolean)){addGold(2000);toast('כל חמשת המבצרים בידיך. הממלכה שלך מאוחדת! +2000 זהב','big');}
+  save();if(curTab==='army')renderPanel();}
+
+/* ---------- build actions ---------- */
+const undoStack=[];
+function placePiece(base){const p=PIECES[S.piece];
+  if(p.flagOnly){if(S.gold<p.cost){toast('אין מספיק זהב לדגל ('+p.cost+')','war');return;}if(flagEnts.some(f=>f.userData.cell[0]===base.x&&f.userData.cell[2]===base.z&&f.userData.cell[1]===base.y))return;addFlagEnt(base.x,base.y,base.z);S.flags.push([base.x,base.y,base.z]);addGold(-p.cost,base.x+.5,base.z+.5);undoStack.push({type:'flag',cell:[base.x,base.y,base.z],cost:p.cost});save();return;}
+  const cells=pieceCells(p,base,S.rot,S.mat).filter(c=>c.y>=0&&c.y<32&&Math.abs(c.x)<WORLD&&Math.abs(c.z)<WORLD&&!S.blocks.has(K(c.x,c.y,c.z)));
+  if(!cells.length)return;
+  const cost=cells.reduce((s,c)=>s+MATS[c.m].cost,0);
+  if(cost>S.gold){toast(`חסר זהב: צריך ${cost}, יש ${Math.floor(S.gold)}`,'war');return;}
+  for(const c of cells){S.blocks.set(K(c.x,c.y,c.z),c.m);for(const tr of trees)if(tr.alive&&Math.abs(tr.x-c.x-.5)<1&&Math.abs(tr.z-c.z-.5)<1)tr.alive=false;}
+  rebuildTrees();
+  let flagCell=null;if(p.flag){const[rx,rz]=rotXZ(p.flag[0],p.flag[2],S.rot);flagCell=[base.x+rx,base.y+p.flag[1],base.z+rz];if(!S.flags.some(f=>f[0]===flagCell[0]&&f[1]===flagCell[1]&&f[2]===flagCell[2])){S.flags.push(flagCell);addFlagEnt(...flagCell);}else flagCell=null;}
+  S.placed+=cells.length;addGold(-cost,base.x+.5,base.z+.5);
+  undoStack.push({type:'place',keys:cells.map(c=>K(c.x,c.y,c.z)),cost,flag:flagCell});if(undoStack.length>60)undoStack.shift();
+  rebuildBlocks();checkMilestones();save();hud();
+  burst(base.x+.5,base.y+.5,base.z+.5,MATS[S.mat].color,6);}
+function removeBlockKey(k,refund){const mi=S.blocks.get(k);if(mi===undefined)return;S.blocks.delete(k);const a=k.split(',').map(Number);burst(a[0]+.5,a[1]+.5,a[2]+.5,MATS[mi].color,8);if(refund){const r=Math.floor(MATS[mi].cost/2);if(r>0)addGold(r,a[0]+.5,a[2]+.5);undoStack.push({type:'erase',k,mi,refund:r});}rebuildBlocks();save();}
+function removeFlagEnt(g,refund){const c=g.userData.cell;const i=S.flags.findIndex(f=>f[0]===c[0]&&f[1]===c[1]&&f[2]===c[2]);if(i>=0)S.flags.splice(i,1);disposeFlagPole(g);flagEnts.splice(flagEnts.indexOf(g),1);if(refund){addGold(12,c[0]+.5,c[2]+.5);undoStack.push({type:'eraseFlag',cell:c,refund:12});}save();}
+function undo(){const a=undoStack.pop();if(!a){toast('אין מה לבטל');return;}
+  if(a.type==='place'){a.keys.forEach(k=>S.blocks.delete(k));S.placed=Math.max(0,S.placed-a.keys.length);if(a.flag){const g=flagEnts.find(f=>f.userData.cell.join()===a.flag.join());if(g)removeFlagEnt(g,false);}addGold(a.cost);rebuildBlocks();}
+  else if(a.type==='erase'){S.blocks.set(a.k,a.mi);S.gold-=a.refund;rebuildBlocks();}
+  else if(a.type==='flag'){const g=flagEnts.find(f=>f.userData.cell.join()===a.cell.join());if(g)removeFlagEnt(g,false);addGold(a.cost);}
+  else if(a.type==='eraseFlag'){S.flags.push(a.cell);addFlagEnt(...a.cell);S.gold-=a.refund;}
+  hud();save();toast('בוטל');}
+
+/* ---------- picking & ghost ---------- */
+const ray=new THREE.Raycaster();const ndc=new THREE.Vector2();
+function pick(cx,cy){const r=canvas.getBoundingClientRect();ndc.set((cx-r.left)/r.width*2-1,-((cy-r.top)/r.height)*2+1);ray.setFromCamera(ndc,camera);
+  const objs=bMesh.filter(m=>m.count>0).concat(flagEnts,[ground]);const hits=ray.intersectObjects(objs,true);
+  for(const h of hits){let o=h.object;
+    if(o===ground){const x=Math.floor(h.point.x),z=Math.floor(h.point.z);return{place:{x,y:0,z},hit:null,point:h.point};}
+    if(o.isInstancedMesh&&o.userData.keys){const k=o.userData.keys[h.instanceId];if(!k)continue;const a=k.split(',').map(Number);const n=h.face.normal;return{place:{x:a[0]+Math.round(n.x),y:a[1]+Math.round(n.y),z:a[2]+Math.round(n.z)},hit:{x:a[0],y:a[1],z:a[2],k},point:h.point};}
+    while(o&&!flagEnts.includes(o))o=o.parent;if(o)return{flag:o,place:null,point:h.point};}
+  return null;}
+const ghost=new THREE.Group();ghost.visible=false;scene.add(ghost);
+const ghostFill=new THREE.Mesh(boxG,new THREE.MeshBasicMaterial({color:0xd9a441,transparent:true,opacity:.28,depthWrite:false}));
+const ghostEdge=new THREE.LineSegments(new THREE.EdgesGeometry(boxG),new THREE.LineBasicMaterial({color:0xffe1a0}));ghost.add(ghostFill,ghostEdge);
+let eraseMode=false;let lastPick=null;
+function updateGhost(p){lastPick=p;if(mode!=='build'||!p){ghost.visible=false;return;}
+  if(eraseMode){if(p.hit){ghost.visible=true;ghost.position.set(p.hit.x+.5,p.hit.y+.5,p.hit.z+.5);ghost.scale.set(1.04,1.04,1.04);ghostFill.material.color.set(0xd04a3a);ghostEdge.material.color.set(0xff8a7a);}else if(p.flag){ghost.visible=true;ghost.position.copy(p.flag.position).add(_v.set(0,1.6,0));ghost.scale.set(.6,3.3,.6);ghostFill.material.color.set(0xd04a3a);}else ghost.visible=false;return;}
+  if(!p.place){ghost.visible=false;return;}
+  const pc=PIECES[S.piece];let cells=pc.flagOnly?[{x:p.place.x,y:p.place.y,z:p.place.z}]:pieceCells(pc,p.place,S.rot,S.mat);
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9,z0=1e9,z1=-1e9;cells.forEach(c=>{x0=Math.min(x0,c.x);x1=Math.max(x1,c.x);y0=Math.min(y0,c.y);y1=Math.max(y1,c.y);z0=Math.min(z0,c.z);z1=Math.max(z1,c.z);});
+  if(pc.flagOnly){y1=y0+2;}
+  ghost.visible=true;ghost.position.set((x0+x1+1)/2,(y0+y1+1)/2,(z0+z1+1)/2);ghost.scale.set(x1-x0+1.02,y1-y0+1.02,z1-z0+1.02);
+  const cost=pc.flagOnly?pc.cost:cells.filter(c=>!S.blocks.has(K(c.x,c.y,c.z))).reduce((s,c)=>s+MATS[c.m].cost,0);
+  const ok=cost<=S.gold;ghostFill.material.color.set(ok?MATS[S.mat].color:'#d04a3a');ghostEdge.material.color.set(ok?0xffe1a0:0xff8a7a);
+  const ci=$('#costInfo');if(ci)ci.textContent='מחיר: '+cost;}
+
+/* ---------- AI ---------- */
+function dist(a,b){return Math.hypot(a.x-b.x,a.z-b.z);}
+function nearestFoe(u,radius,from){from=from||u;let best=null,bd=radius*radius;for(const v of units){if(!v.alive||v.team===u.team)continue;const dx=v.x-from.x,dz=v.z-from.z,d=dx*dx+dz*dz;if(d<bd){bd=d;best=v;}}return best;}
+function stepMove(u,dx,dz,dt,spd){const L=Math.hypot(dx,dz);if(L<1e-4)return 0;const s=(spd||u.speed)*dt;const mx=dx/L*s,mz=dz/L*s;u.face=Math.atan2(dx,dz);u.moving=true;
+  const free=blockedAt(u.x,u.z);let moved=0;const nx=u.x+mx,nz=u.z+mz;
+  if(free||!blockedAt(nx,u.z)){u.x=nx;moved+=Math.abs(mx);}if(free||!blockedAt(u.x,nz)){u.z=nz;moved+=Math.abs(mz);}
+  return moved/(Math.abs(mx)+Math.abs(mz)+1e-6);}
+function moveToward(u,tx,tz,dt,stop){const dx=tx-u.x,dz=tz-u.z;const d=Math.hypot(dx,dz);if(d<=(stop||.3))return true;const k=stepMove(u,dx,dz,dt);if(k<.25)u.stuckT+=dt;else u.stuckT=Math.max(0,u.stuckT-dt);return false;}
+function attack(u,foe){u.face=Math.atan2(foe.x-u.x,foe.z-u.z);if(u.def.ranged){shoot(u,foe);u.swing=.2;}else{u.swing=.3;hurt(foe,u.dmg*rnd(.85,1.15),u);}}
+function engage(u,foe,dt){const d=dist(u,foe);if(d>u.range){moveToward(u,foe.x,foe.z,dt,u.range*.9);}else{u.face=Math.atan2(foe.x-u.x,foe.z-u.z);if(u.cdT<=0){u.cdT=u.cd*rnd(.9,1.1);attack(u,foe);}}}
+function hurt(v,amt,src){if(!v.alive)return;v.hp-=amt;burst(v.x,1,v.z,v.team==='e'?'#7a1a1a':'#b33',2);if(v.hp<=0)kill(v,src);}
+let heroDeadT=0;
+function kill(v,src){v.alive=false;v.deadT=1.1;burst(v.x,.8,v.z,'#6e1414',8);
+  if(v.team==='e'){S.kills++;const bounty=Math.round((v.type==='knight'?18:v.type==='archer'?10:8)*(v.lvl||1)*(v.raider?1.3:1));addGold(bounty,v.x,v.z);
+    if(v.camp!==undefined&&!v.raider&&!S.camps[v.camp]&&garrisonAlive(v.camp).length===0)capture(v.camp);}
+  else if(v===hero){heroDeadT=6;const lost=Math.round(S.gold*.1);S.gold-=lost;toast(`המלך נפל בקרב! איבדת ${lost} זהב. חוזר לטירה…`,'war');}
+  else{const i=S.army.indexOf(v.type);if(i>=0)S.army.splice(i,1);hud();save();}}
+function formationSlot(i){const n=5,row=Math.floor(i/n),col=i%n;const f=hero.face;const bx=-Math.sin(f),bz=-Math.cos(f),sx=Math.cos(f),sz=-Math.sin(f);const back=1.7+row*1.3,side=(col-2)*1.25;return{x:hero.x+bx*back+sx*side,z:hero.z+bz*back+sz*side};}
+function freeSpotNear(x,z){for(let r=1;r<8;r++)for(let k=0;k<12;k++){const a=k*TAU/12;const px=x+Math.sin(a)*r,pz=z+Math.cos(a)*r;if(!blockedAt(px,pz))return{x:px,z:pz};}return{x,z};}
+function breach(u,dx,dz){const L=Math.hypot(dx,dz)||1;const cx=Math.floor(u.x+dx/L*.75),cz=Math.floor(u.z+dz/L*.75);
+  for(const[ax,az]of[[cx,cz],[Math.floor(u.x+dx/L*.75),Math.floor(u.z)],[Math.floor(u.x),Math.floor(u.z+dz/L*.75)]]){for(const y of[1,0]){const k=K(ax,y,az);if(S.blocks.has(k)){const mi=S.blocks.get(k);u.breachNeed=.8+MATS[mi].cost*.55;removeBlockKey(k,false);floatText(ax+.5,2,az+.5,'פרצה!','#e0705f');return;}}}}
+
+/* ---------- raids & timers ---------- */
+let taxT=10,raidT=140,regenT=35,saveT=8,discoverT=1;
+function raid(){const open=CAMPS.map((c,i)=>i).filter(i=>!S.camps[i]);if(!open.length)return;const ci=open[(Math.random()*open.length)|0];const c=CAMPS[ci];
+  const n=1+c.lvl+Math.floor(S.blocks.size/250);for(let i=0;i<n;i++){const t=i%3===2?'archer':(c.lvl>=3&&i===0?'knight':'foot');spawnUnit(t,'e',c.x+rnd(-3,3),c.z+rnd(-3,3),{camp:ci,raider:true,lvl:c.lvl});}
+  toast(`פשיטה! ${n} לוחמים יצאו מ${c.name} לעבר הטירה שלך`,'war');}
+
+/* ---------- input ---------- */
+const keys={};
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key.toLowerCase();keys[k]=true;
+  if(k==='r'){S.rot=(S.rot+1)&3;updateGhost(lastPick&&pick(lastMouse.x,lastMouse.y));}
+  if(k==='x'){setErase(!eraseMode);}
+  if(k==='z'&&mode==='build'){undo();}
+  if(k==='b'){setTab(curTab==='build'?'hero':'build');}
+  if(k==='escape'){setTab('hero');}
+  if(['1','2','3','4'].includes(k))setTab(['hero','build','army','realm'][+k-1]);
+});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
+const ptrs=new Map();let pinch=null;let dragging=false;let lastMouse={x:0,y:0};let heroGoal=null;
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('pointerdown',e=>{canvas.focus();try{canvas.setPointerCapture(e.pointerId);}catch(_){}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,btn:e.button});dragging=false;
+  if(ptrs.size===2){const[a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),a:Math.atan2(b.y-a.y,b.x-a.x)};}});
+canvas.addEventListener('pointermove',e=>{lastMouse={x:e.clientX,y:e.clientY};const p=ptrs.get(e.pointerId);
+  if(!p){if(e.pointerType==='mouse'&&mode==='build')updateGhost(pick(e.clientX,e.clientY));return;}
+  const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+  if(Math.hypot(p.x-p.sx,p.y-p.sy)>7)dragging=true;
+  if(ptrs.size===2&&pinch){const[a,b]=[...ptrs.values()];const d=Math.hypot(a.x-b.x,a.y-b.y),an=Math.atan2(b.y-a.y,b.x-a.x);cam.dist=clamp(cam.dist*pinch.d/Math.max(d,1),9,80);let da=an-pinch.a;if(da>Math.PI)da-=TAU;if(da<-Math.PI)da+=TAU;cam.yaw-=da;pinch={d,a:an};dragging=true;return;}
+  if(!dragging)return;
+  if(p.btn===2||p.btn===1||mode!=='build'){cam.yaw-=dx*.008;cam.pitch=clamp(cam.pitch+dy*.005,.4,1.38);}
+  else{const k=cam.dist*.0019;const fx=-Math.sin(cam.yaw),fz=-Math.cos(cam.yaw),rx=Math.cos(cam.yaw),rz=-Math.sin(cam.yaw);cam.target.x=clamp(cam.target.x-rx*dx*k+fx*dy*k,-WORLD,WORLD);cam.target.z=clamp(cam.target.z-rz*dx*k+fz*dy*k,-WORLD,WORLD);}});
+function endPtr(e){const p=ptrs.get(e.pointerId);if(!p)return;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;
+  if(!dragging&&ptrs.size===0&&e.type==='pointerup'){
+    if(mode==='build'){const pk=pick(e.clientX,e.clientY);updateGhost(pk);if(!pk)return;
+      if(p.btn===2||eraseMode){if(pk.flag)removeFlagEnt(pk.flag,true);else if(pk.hit)removeBlockKey(pk.hit.k,true);updateGhost(pick(e.clientX,e.clientY));}
+      else if(p.btn===0&&pk.place)placePiece(pk.place);}
+    else if(p.btn===0&&hero.alive){const pk=pick(e.clientX,e.clientY);if(pk&&pk.point){heroGoal={x:pk.point.x,z:pk.point.z};burst(pk.point.x,.2,pk.point.z,'#d9a441',4);}}}}
+canvas.addEventListener('pointerup',endPtr);canvas.addEventListener('pointercancel',endPtr);
+canvas.addEventListener('wheel',e=>{e.preventDefault();cam.dist=clamp(cam.dist*(1+Math.sign(e.deltaY)*.1),9,80);},{passive:false});
+/* joystick */
+const joy=$('#joy'),joyK=$('#joyK');let joyV={x:0,y:0},joyId=null;
+joy.addEventListener('pointerdown',e=>{joyId=e.pointerId;try{joy.setPointerCapture(e.pointerId);}catch(_){}joyMove(e);});
+joy.addEventListener('pointermove',e=>{if(e.pointerId===joyId)joyMove(e);});
+const joyEnd=e=>{if(e.pointerId!==joyId)return;joyId=null;joyV={x:0,y:0};joyK.style.transform='';};
+joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',joyEnd);
+function joyMove(e){const r=joy.getBoundingClientRect();let x=(e.clientX-r.left-r.width/2)/(r.width/2),y=(e.clientY-r.top-r.height/2)/(r.height/2);const L=Math.hypot(x,y);if(L>1){x/=L;y/=L;}joyV={x,y:-y};joyK.style.transform=`translate(${x*34}px,${y*34}px)`;}
+
+/* ---------- UI ---------- */
+let mode='hero',curTab='hero';
+function toast(msg,kind){const el=document.createElement('div');el.className='toast'+(kind?' '+kind:'');el.textContent=msg;const box=$('#toasts');box.prepend(el);while(box.children.length>3)box.lastChild.remove();setTimeout(()=>el.remove(),kind==='big'?4800:3200);}
+let hudCache='';
+function hud(){const g=Math.floor(S.gold);const n=units.filter(u=>u.alive&&u.team==='p'&&u!==hero).length;const t=taxRate();const key=g+'|'+n+'|'+t;if(key===hudCache)return;hudCache=key;$('#gold').textContent=g.toLocaleString('he-IL');$('#armyN').textContent=n;$('#tax').textContent='+'+t+' / 10ש׳';
+  document.querySelectorAll('[data-cost]').forEach(b=>b.disabled=+b.dataset.cost>S.gold);}
+function setErase(v){eraseMode=v;const b=$('#bErase');if(b)b.setAttribute('aria-pressed',v);updateGhost(lastPick);}
+function setTab(t){curTab=t;mode=t==='build'?'build':'hero';document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tab===t));
+  grid.visible=mode==='build';if(mode!=='build'){ghost.visible=false;setErase(false);}joy.hidden=!(isTouch&&mode==='hero');renderPanel();}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab===curTab&&b.dataset.tab!=='hero'?'hero':b.dataset.tab)));
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function renderPanel(){const P=$('#panel');
+  if(curTab==='hero'){P.hidden=true;P.innerHTML='';return;}P.hidden=false;
+  if(curTab==='build'){
+    P.innerHTML=`<div class="row"><h3>מה לבנות</h3><span class="cost" id="costInfo">מחיר: —</span></div>
+    <div class="scroller" id="pcs">${PIECES.map((p,i)=>`<button class="pc" data-i="${i}" aria-pressed="${i===S.piece}">${p.name}<small>${p.flagOnly?p.cost+' זהב':p.cells().length+' בלוקים'}</small></button>`).join('')}</div>
+    <h3>חומר</h3>
+    <div class="scroller" id="mats">${MATS.map((m,i)=>`<button class="sw" data-i="${i}" aria-pressed="${i===S.mat}" title="${m.name}"><span class="t" style="background-image:url(${m.tex.userData.canvas.toDataURL()})"></span>${m.name} · ${m.cost}</button>`).join('')}</div>
+    <div class="row"><button class="btn" id="bRot">סובב (R)</button><button class="btn" id="bErase" aria-pressed="${eraseMode}">מחיקה (X)</button><button class="btn" id="bUndo">בטל (Z)</button></div>
+    <div class="hint">${isTouch?'הקש כדי לבנות · גרור כדי לזוז · שתי אצבעות לזום וסיבוב':'לחיצה בונה · גרירה מזיזה · לחצן ימני מוחק, גרירה ימנית מסובבת · גלגלת לזום'}. כל 20 בלוקים מוסיפים מס.</div>`;
+    P.querySelectorAll('.pc').forEach(b=>b.onclick=()=>{S.piece=+b.dataset.i;setErase(false);P.querySelectorAll('.pc').forEach(x=>x.setAttribute('aria-pressed',x===b));updateGhost(lastPick);});
+    P.querySelectorAll('.sw').forEach(b=>b.onclick=()=>{S.mat=+b.dataset.i;setErase(false);P.querySelectorAll('.sw').forEach(x=>x.setAttribute('aria-pressed',x===b));updateGhost(lastPick);});
+    $('#bRot').onclick=()=>{S.rot=(S.rot+1)&3;updateGhost(lastPick&&lastPick.place?lastPick:null);};
+    $('#bErase').onclick=()=>setErase(!eraseMode);$('#bUndo').onclick=undo;
+  }
+  if(curTab==='army'){
+    const n=units.filter(u=>u.alive&&u.team==='p'&&u!==hero).length;
+    P.innerHTML=`<div class="row"><h3>גיוס</h3><span class="cost">${n} / ${armyCap()} לוחמים</span></div>
+    <div class="cards">${['foot','archer','knight'].map(t=>{const d=UT[t];return `<div class="card"><b>${d.name}</b><div class="st">חיים ${d.hp} · נזק ${d.dmg}${d.ranged?' · טווח':''}${d.mounted?' · מהיר':''}</div><button class="btn gold" data-rec="${t}" data-cost="${d.cost}" ${d.cost>S.gold?'disabled':''}>גייס · ${d.cost}</button></div>`;}).join('')}</div>
+    <div class="row"><h3>פקודה</h3></div>
+    <div class="row"><button class="btn" id="oFollow" aria-pressed="${S.order==='follow'}">עקבו אחרי המלך</button><button class="btn" id="oHold" aria-pressed="${S.order==='hold'}">החזיקו עמדה</button></div>
+    <h3>מבצרי האויב</h3>
+    ${CAMPS.map((c,i)=>{const won=S.camps[i];const alive=garrisonAlive(i).length;return `<div class="camp ${won?'won':''}"><span class="lvl">${c.lvl}</span><div class="nm"><b>${c.name}</b><span>${won?'כבוש · +'+c.lvl*7+' מס':(S.discovered[i]?alive+' מגינים':'לא נחקר')+' · שלל '+150*c.lvl}</span></div>${won?'':`<button class="btn red" data-atk="${i}" aria-pressed="${S.order==='charge'&&S.orderCamp===i}">שלח צבא</button>`}</div>`;}).join('')}`;
+    P.querySelectorAll('[data-rec]').forEach(b=>b.onclick=()=>recruit(b.dataset.rec));
+    $('#oFollow').onclick=()=>{S.order='follow';S.orderCamp=-1;toast('הצבא חוזר למלך');renderPanel();};
+    $('#oHold').onclick=()=>{S.order='hold';units.forEach(u=>{if(u.team==='p'&&u!==hero)u.hold={x:u.x,z:u.z};});toast('הצבא מחזיק עמדה');renderPanel();};
+    P.querySelectorAll('[data-atk]').forEach(b=>b.onclick=()=>{const i=+b.dataset.atk;S.order='charge';S.orderCamp=i;toast('הצבא צועד אל '+CAMPS[i].name,'war');renderPanel();});
+  }
+  if(curTab==='realm'){
+    const f=S.flag;const tin=(slot)=>TINCT.map(([c,n])=>`<button class="tinct" data-slot="${slot}" data-c="${c}" aria-pressed="${f[slot]===c}" title="${n}" aria-label="${n}" style="background:${c}"></button>`).join('');
+    P.innerHTML=`<div class="row" style="align-items:flex-start;gap:12px"><canvas id="flagPrev" width="360" height="240"></canvas>
+      <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:150px"><div class="fld"><label for="inName">שם הממלכה</label><input id="inName" maxlength="28" value="${esc(S.name)}"></div><div class="fld"><label for="inMotto">מוטו</label><input id="inMotto" maxlength="40" value="${esc(S.motto)}"></div></div></div>
+    <h3>צבע השדה</h3><div class="row">${tin('c1')}</div>
+    <h3>דוגמה</h3><div class="row">${PATTERNS.map(([k,n])=>`<button class="chipb" data-pat="${k}" aria-pressed="${f.pattern===k}">${n}</button>`).join('')}</div><div class="row">${tin('c2')}</div>
+    <h3>סמל</h3><div class="row">${EMBLEMS.map(([k,n])=>`<button class="chipb" data-em="${k}" aria-pressed="${f.emblem===k}">${n}</button>`).join('')}</div><div class="row">${tin('c3')}</div>
+    <h3>דברי הימים</h3><div class="stats"><div><b>${S.blocks.size}</b><span>בלוקים</span></div><div><b>${S.kills}</b><span>אויבים הובסו</span></div><div><b>${S.camps.filter(Boolean).length}/5</b><span>מבצרים</span></div><div><b>${flagEnts.length}</b><span>דגלים</span></div></div>
+    <div class="row"><button class="btn" id="bReset">התחל ממלכה חדשה</button><span class="hint" id="resetHint"></span></div>`;
+    refreshFlag();
+    $('#inName').oninput=e=>{S.name=e.target.value;refreshFlag();save();};$('#inMotto').oninput=e=>{S.motto=e.target.value;refreshFlag();save();};
+    P.querySelectorAll('.tinct').forEach(b=>b.onclick=()=>{S.flag[b.dataset.slot]=b.dataset.c;P.querySelectorAll(`.tinct[data-slot="${b.dataset.slot}"]`).forEach(x=>x.setAttribute('aria-pressed',x===b));refreshFlag();syncTeamColor();save();});
+    P.querySelectorAll('[data-pat]').forEach(b=>b.onclick=()=>{S.flag.pattern=b.dataset.pat;P.querySelectorAll('[data-pat]').forEach(x=>x.setAttribute('aria-pressed',x===b));refreshFlag();save();});
+    P.querySelectorAll('[data-em]').forEach(b=>b.onclick=()=>{S.flag.emblem=b.dataset.em;P.querySelectorAll('[data-em]').forEach(x=>x.setAttribute('aria-pressed',x===b));refreshFlag();save();});
+    let armed=false;$('#bReset').onclick=()=>{if(!armed){armed=true;$('#bReset').classList.add('red');$('#bReset').textContent='בטוח? לחץ שוב למחיקה';$('#resetHint').textContent='כל הטירות והזהב יימחקו';return;}try{localStorage.removeItem(SAVE_KEY);}catch(_){}location.reload();};
+  }
+  hud();}
+function armyCap(){return 24+S.camps.filter(Boolean).length*6;}
+function recruit(t){const d=UT[t];const n=units.filter(u=>u.alive&&u.team==='p'&&u!==hero).length;if(n>=armyCap()){toast('הגעת למגבלת הצבא. כבוש מבצרים כדי להגדיל אותה','war');return;}if(S.gold<d.cost){toast('אין מספיק זהב','war');return;}
+  const s=freeSpotNear(hero.x+rnd(-1,1),hero.z+rnd(-1,1));spawnUnit(t,'p',s.x,s.z);S.army.push(t);addGold(-d.cost,s.x,s.z);burst(s.x,1,s.z,teamCols.p,8);toast(d.name+' הצטרף לצבא');save();renderPanel();}
+$('#fsBtn').onclick=async()=>{const el=document.documentElement;try{if(document.fullscreenElement||document.webkitFullscreenElement){(document.exitFullscreen||document.webkitExitFullscreen).call(document);return;}const fn=el.requestFullscreen||el.webkitRequestFullscreen;if(!fn)throw 0;await fn.call(el);}catch(_){toast('בדפדפן הזה אין מסך מלא. באייפון: שתף ← "הוספה למסך הבית" ואז פתח משם');}};
+$('#helpBtn').onclick=()=>{$('#help').hidden=false;};
+$('#helpGo').onclick=()=>{$('#help').hidden=true;S.helpSeen=true;save();canvas.focus();};
+$('#mini').addEventListener('pointerdown',e=>{const r=e.currentTarget.getBoundingClientRect();const x=((e.clientX-r.left)/r.width*2-1)*WORLD,z=((e.clientY-r.top)/r.height*2-1)*WORLD;if(mode==='build'){cam.target.x=x;cam.target.z=z;}else if(hero.alive){heroGoal={x,z};}});
+
+/* ---------- minimap ---------- */
+const mini=$('#mini'),mx=mini.getContext('2d');
+function drawMini(){const W=mini.width,sc=W/(WORLD*2);const P=(v)=>(v+WORLD)*sc;mx.fillStyle='#34492a';mx.fillRect(0,0,W,W);
+  mx.fillStyle='#284020';for(const t of trees)if(t.alive)mx.fillRect(P(t.x)-1,P(t.z)-1,2,2);
+  mx.fillStyle='#cbb994';const seen=new Set();for(const k of S.blocks.keys()){const a=k.split(',');const c=a[0]+','+a[2];if(seen.has(c))continue;seen.add(c);mx.fillRect(P(+a[0]),P(+a[2]),Math.max(1.5,sc),Math.max(1.5,sc));}
+  CAMPS.forEach((c,i)=>{mx.beginPath();mx.arc(P(c.x),P(c.z),c.lvl>=4?9:7,0,TAU);mx.fillStyle=S.camps[i]?'#d9a441':'#a3302a';mx.fill();mx.lineWidth=2;mx.strokeStyle='#000';mx.stroke();mx.fillStyle='#fff';mx.font='bold 10px Assistant,sans-serif';mx.textAlign='center';mx.textBaseline='middle';mx.fillText(c.lvl,P(c.x),P(c.z)+.5);});
+  for(const u of units){if(!u.alive||u===hero)continue;mx.fillStyle=u.team==='p'?'#8fb4ff':'#ff6b5a';mx.fillRect(P(u.x)-1.5,P(u.z)-1.5,3,3);}
+  if(hero.alive){mx.save();mx.translate(P(hero.x),P(hero.z));mx.rotate(-hero.face+Math.PI);mx.fillStyle='#fff';mx.beginPath();mx.moveTo(0,-6);mx.lineTo(4.5,5);mx.lineTo(-4.5,5);mx.closePath();mx.fill();mx.restore();}
+  const fx=-Math.sin(cam.yaw),fz=-Math.cos(cam.yaw);mx.strokeStyle='rgba(255,225,160,.8)';mx.lineWidth=1.5;mx.beginPath();mx.moveTo(P(cam.target.x),P(cam.target.z));mx.lineTo(P(cam.target.x+fx*14),P(cam.target.z+fz*14));mx.stroke();}
+
+/* ---------- overlay ---------- */
+const ov=$('#ov'),ox=ov.getContext('2d');let dpr=1;const pv=new THREE.Vector3();
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();dpr=Math.min(window.devicePixelRatio||1,2);ov.width=w*dpr;ov.height=h*dpr;ov.style.width=w+'px';ov.style.height=h+'px';}
+addEventListener('resize',resize);
+function drawOverlay(dt){const W=innerWidth,H=innerHeight;ox.setTransform(dpr,0,0,dpr,0,0);ox.clearRect(0,0,W,H);
+  for(const u of units){if(!u.alive)continue;if(u.team==='p'&&u.hp>=u.maxHp-.5)continue;if(u===hero)continue;pv.set(u.x,u.h,u.z).project(camera);if(pv.z>1||Math.abs(pv.x)>1.1||Math.abs(pv.y)>1.1)continue;
+    const sx=(pv.x+1)/2*W,sy=(1-pv.y)/2*H,bw=u.type==='knight'?34:28;ox.fillStyle='rgba(0,0,0,.65)';ox.fillRect(sx-bw/2-1,sy-1,bw+2,6);ox.fillStyle=u.team==='e'?(u.raider?'#ff7a3a':'#d23d32'):'#6fc25a';ox.fillRect(sx-bw/2,sy,bw*Math.max(0,u.hp/u.maxHp),4);}
+  ox.textAlign='center';ox.font='800 15px Assistant,sans-serif';
+  for(let i=floats.length-1;i>=0;i--){const f=floats[i];f.t+=dt;if(f.t>1.4){floats.splice(i,1);continue;}pv.set(f.x,f.y+f.t*1.2,f.z).project(camera);if(pv.z>1)continue;const sx=(pv.x+1)/2*W,sy=(1-pv.y)/2*H;ox.globalAlpha=Math.min(1,(1.4-f.t)*2);ox.lineWidth=3;ox.strokeStyle='rgba(0,0,0,.7)';ox.strokeText(f.text,sx,sy);ox.fillStyle=f.color;ox.fillText(f.text,sx,sy);ox.globalAlpha=1;}
+  if(!hero.alive){ox.fillStyle='rgba(60,0,0,.25)';ox.fillRect(0,0,W,H);ox.font='28px "Suez One",serif';ox.fillStyle='#f0e7d4';ox.fillText('המלך יחזור בעוד '+Math.ceil(heroDeadT),W/2,H/2);}}
+
+/* ---------- save/load ---------- */
+function save(){try{const d={gold:Math.floor(S.gold),name:S.name,motto:S.motto,flag:S.flag,blocks:[...S.blocks].map(([k,m])=>k+','+m),flags:S.flags,camps:S.camps,discovered:S.discovered,
+  army:units.filter(u=>u.alive&&u.team==='p'&&u!==hero).map(u=>u.type),placed:S.placed,kills:S.kills,milestone:S.milestone,mat:S.mat,piece:S.piece,helpSeen:S.helpSeen,hero:hero?[+hero.x.toFixed(1),+hero.z.toFixed(1)]:null};localStorage.setItem(SAVE_KEY,JSON.stringify(d));}catch(_){}}
+function load(){try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)return false;const d=JSON.parse(raw);
+  Object.assign(S,{gold:d.gold||0,name:d.name||'',motto:d.motto||'',flag:Object.assign(S.flag,d.flag||{}),flags:d.flags||[],camps:d.camps||S.camps,discovered:d.discovered||S.discovered,army:d.army||[],placed:d.placed||0,kills:d.kills||0,milestone:d.milestone||0,mat:d.mat||1,piece:d.piece||0,helpSeen:!!d.helpSeen});
+  S.blocks=new Map();(d.blocks||[]).forEach(s=>{const a=s.split(',');S.blocks.set(a[0]+','+a[1]+','+a[2],+a[3]);});S._hero=d.hero;return true;}catch(_){return false;}}
+
+/* ---------- boot ---------- */
+const loaded=load();
+if(!loaded){
+  const put=(id,base,rot,mat)=>{const p=PIECES.find(p=>p.id===id);pieceCells(p,base,rot,mat).forEach(c=>S.blocks.set(K(c.x,c.y,c.z),c.m));if(p.flag){const[rx,rz]=rotXZ(p.flag[0],p.flag[2],rot);S.flags.push([base.x+rx,base.y+p.flag[1],base.z+rz]);}};
+  put('keep',{x:10,y:0,z:-6},0,MI.stone);put('tower',{x:5,y:0,z:-10},0,MI.stone);put('wall',{x:7,y:0,z:-11},2,MI.stone);put('house',{x:-6,y:0,z:5},1,MI.plaster);put('house',{x:-6,y:0,z:-2},1,MI.wood);
+  S.flags.push([2,0,2]);
+}
+S.flags.forEach(f=>addFlagEnt(...f));
+for(const k of S.blocks.keys()){const a=k.split(',').map(Number);for(const tr of trees)if(tr.alive&&Math.abs(tr.x-a[0]-.5)<1&&Math.abs(tr.z-a[2]-.5)<1)tr.alive=false;}
+rebuildTrees();rebuildBlocks();syncTeamColor();
+const hs=S._hero&&!blockedAt(S._hero[0],S._hero[1])?{x:S._hero[0],z:S._hero[1]}:freeSpotNear(2,4);
+hero=spawnUnit('hero','p',hs.x,hs.z);hero.face=Math.PI*.8;
+S.army.slice(0,armyCap()).forEach((t,i)=>{const s=freeSpotNear(hero.x+(i%4)-1.5,hero.z+2+Math.floor(i/4));spawnUnit(t,'p',s.x,s.z);});
+CAMPS.forEach((c,i)=>{if(!S.camps[i])spawnGarrison(i);});
+cam.target.set(hero.x,0,hero.z);
+refreshFlag();resize();setTab('hero');hud();
+if(!S.helpSeen)$('#help').hidden=false;else toast('ברוך שובך ל'+(S.name||'ממלכה'),'big');
+
+/* ---------- loop ---------- */
+let last=performance.now(),T=0,miniT=0,cutKey='';
+function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;T+=dt;
+  // camera yaw keys
+  if(keys['q'])cam.yaw+=dt*1.8;if(keys['e'])cam.yaw-=dt*1.8;
+  const fx=-Math.sin(cam.yaw),fz=-Math.cos(cam.yaw),rx=Math.cos(cam.yaw),rz=-Math.sin(cam.yaw);
+  let ix=(keys['d']||keys['arrowright']?1:0)-(keys['a']||keys['arrowleft']?1:0)+joyV.x,iy=(keys['w']||keys['arrowup']?1:0)-(keys['s']||keys['arrowdown']?1:0)+joyV.y;
+  for(const u of units)u.moving=false;
+  if(mode==='build'){if(ix||iy){const sp=cam.dist*.9*dt;cam.target.x=clamp(cam.target.x+(rx*ix+fx*iy)*sp,-WORLD,WORLD);cam.target.z=clamp(cam.target.z+(rz*ix+fz*iy)*sp,-WORLD,WORLD);}}
+  if(hero.alive){
+    if(mode==='hero'&&(Math.abs(ix)>.05||Math.abs(iy)>.05)){heroGoal=null;const L=Math.min(1,Math.hypot(ix,iy));stepMove(hero,rx*ix+fx*iy,rz*ix+fz*iy,dt,hero.speed*Math.max(.35,L));}
+    else if(heroGoal){if(moveToward(hero,heroGoal.x,heroGoal.z,dt,.35)||hero.stuckT>1){heroGoal=null;hero.stuckT=0;}}
+    hero.cdT-=dt;const foe=nearestFoe(hero,hero.moving?hero.range+.4:4);
+    if(foe){if(!hero.moving&&!heroGoal)engage(hero,foe,dt);else if(dist(hero,foe)<=hero.range+.4&&hero.cdT<=0){hero.cdT=hero.cd;attack(hero,foe);}}
+    if(!nearestFoe(hero,12))hero.hp=Math.min(hero.maxHp,hero.hp+6*dt);
+  }else{heroDeadT-=dt;if(heroDeadT<=0){const s=freeSpotNear(2,4);hero.alive=true;hero.hp=hero.maxHp;hero.x=s.x;hero.z=s.z;hero.mesh.visible=true;hero.mesh.rotation.z=0;hero.deadT=0;toast('המלך חזר לטירה');}}
+  // soldiers
+  let fi=0;
+  for(const u of units){if(!u.alive||u===hero)continue;u.cdT-=dt;
+    if(u.team==='p'){
+      const idx=fi++;let foe=null;
+      if(S.order==='follow'){foe=hero.alive?nearestFoe(u,14,hero):nearestFoe(u,9);if(foe&&dist(u,foe)>16)foe=null;}
+      else if(S.order==='hold')foe=nearestFoe(u,u.def.ranged?10:7);
+      else foe=nearestFoe(u,11);
+      if(foe)engage(u,foe,dt);
+      else if(S.order==='follow'&&hero.alive){const s=formationSlot(idx);moveToward(u,s.x,s.z,dt,.45);if(dist(u,hero)>6&&u.moving)stepMove(u,s.x-u.x,s.z-u.z,dt*.35);
+        if(u.stuckT>2.2&&dist(u,hero)>9){const p=freeSpotNear(hero.x,hero.z);u.x=p.x;u.z=p.z;u.stuckT=0;burst(u.x,1,u.z,'#ccc',4);}}
+      else if(S.order==='hold'&&u.hold)moveToward(u,u.hold.x,u.hold.z,dt,.4);
+      else if(S.order==='charge'){const c=CAMPS[S.orderCamp];if(c){const a=idx*2.4;moveToward(u,c.x+Math.sin(a)*2.5,c.z+Math.cos(a)*2.5,dt,.6);}}
+      if(!foe&&!u.moving)u.hp=Math.min(u.maxHp,u.hp+2*dt);
+    }else{
+      if(u.raider){const foe=nearestFoe(u,9);if(foe)engage(u,foe,dt);else{const tx=3-u.x,tz=-u.z;if(Math.hypot(tx,tz)>3){const k=stepMove(u,tx,tz,dt);if(k<.25){u.stuckT+=dt;if(u.stuckT>(u.breachNeed||1.2)){u.stuckT=0;breach(u,tx,tz);}}else u.stuckT=0;}else{u.pillT=(u.pillT||0)+dt;if(u.pillT>1){u.pillT=0;if(S.gold>0){addGold(-3,u.x,u.z,'ביזה');}}}}}
+      else{const c=CAMPS[u.camp];const foe=nearestFoe(u,13);if(foe&&Math.hypot(foe.x-c.x,foe.z-c.z)<28)engage(u,foe,dt);else{moveToward(u,u.post.x,u.post.z,dt,.4);if(!u.moving)u.hp=Math.min(u.maxHp,u.hp+3*dt);}}
+    }}
+  // animate units
+  for(let i=units.length-1;i>=0;i--){const u=units[i];
+    if(!u.alive){u.deadT-=dt;u.mesh.rotation.z=Math.min(Math.PI/2,u.mesh.rotation.z+dt*5);u.mesh.position.y=Math.max(-.4,u.mesh.position.y-dt*.3);if(u.deadT<=0){if(u===hero){u.mesh.visible=false;continue;}scene.remove(u.mesh);units.splice(i,1);}continue;}
+    u.mesh.position.set(u.x,0,u.z);let dr=u.face-u.mesh.rotation.y;dr=Math.atan2(Math.sin(dr),Math.cos(dr));u.mesh.rotation.y+=dr*Math.min(1,dt*12);
+    if(u.moving){u.walk+=dt*u.speed*2.4;u.rig.position.y=Math.abs(Math.sin(u.walk))*.09;u.rig.rotation.z=Math.sin(u.walk)*.05;}else{u.rig.position.y*=.8;u.rig.rotation.z*=.8;}
+    if(u.swing>0){u.swing-=dt;const k=Math.max(0,u.swing)/.3;u.arm.rotation.x=-Math.sin(k*Math.PI)*1.5;}else u.arm.rotation.x*=.8;}
+  // arrows
+  for(let i=arrows.length-1;i>=0;i--){const a=arrows[i];a.t+=dt;const k=Math.min(1,a.t/a.dur);const x=a.sx+(a.tx-a.sx)*k,z=a.sz+(a.tz-a.sz)*k,y=1.3+Math.sin(k*Math.PI)*a.d*.13-k*.4;
+    const k2=Math.min(1,k+.05);a.m.position.set(x,y,z);a.m.lookAt(a.sx+(a.tx-a.sx)*k2,1.3+Math.sin(k2*Math.PI)*a.d*.13-k2*.4,a.sz+(a.tz-a.sz)*k2);
+    if(k>=1){if(a.foe.alive&&Math.hypot(a.foe.x-a.tx,a.foe.z-a.tz)<1.6)hurt(a.foe,a.dmg,a.src);scene.remove(a.m);arrows.splice(i,1);}}
+  // sparks
+  for(const s of sparks){if(!s.on)continue;s.t-=dt;if(s.t<=0){s.on=false;s.m.visible=false;continue;}s.v.y-=14*dt;s.m.position.addScaledVector(s.v,dt);if(s.m.position.y<.06){s.m.position.y=.06;s.v.set(s.v.x*.5,0,s.v.z*.5);}s.m.rotation.x+=dt*6;}
+  // flags
+  for(const w of waving){const p=w.geo.attributes.position;const b=w.base;for(let j=0;j<p.count;j++){const bx=b[j*3];p.array[j*3+2]=Math.sin(bx*2.6-T*5+w.ph)*.13*bx+Math.sin(b[j*3+1]*3+T*3)*.03*bx;}p.needsUpdate=true;}
+  CAMPS.forEach((c,i)=>{c.fire.scale.set(1+Math.sin(T*13+i)*.12,1+Math.sin(T*9+i)*.2,1);});
+  // timers
+  taxT-=dt;if(taxT<=0){taxT=10;const t=taxRate();addGold(t,hero.x,hero.z,'מס');}
+  raidT-=dt;if(raidT<=0){raidT=rnd(110,170);raid();}
+  regenT-=dt;if(regenT<=0){regenT=35;CAMPS.forEach((c,i)=>{if(S.camps[i])return;const alive=garrisonAlive(i);if(alive.length<c.comp.length&&alive.length>0){const t=c.comp[alive.length];const a=Math.random()*TAU;spawnUnit(t,'e',c.x+Math.sin(a)*3,c.z+Math.cos(a)*3,{camp:i,post:{x:c.x+Math.sin(a)*3,z:c.z+Math.cos(a)*3},lvl:c.lvl});}});}
+  discoverT-=dt;if(discoverT<=0){discoverT=.5;CAMPS.forEach((c,i)=>{if(!S.discovered[i]&&hero.alive&&Math.hypot(hero.x-c.x,hero.z-c.z)<30){S.discovered[i]=true;addGold(30,hero.x,hero.z,'גילוי');toast(`גילית את ${c.name} (רמה ${c.lvl})`);save();}});}
+  saveT-=dt;if(saveT<=0){saveT=10;save();}
+  // cutaway
+  if(mode==='hero'&&hero.alive){const hx=Math.floor(hero.x),hz=Math.floor(hero.z);let cov=false;for(let y=2;y<20&&!cov;y++)for(let dx=-1;dx<=1&&!cov;dx++)for(let dz=-1;dz<=1;dz++)if(S.blocks.has(K(hx+dx,y,hz+dz))){cov=true;break;}
+    const key=cov?hx+','+hz:'';if(key!==cutKey){cutKey=key;cut=cov?{x:hero.x,z:hero.z,y:2,r:11}:null;rebuildBlocks();}}
+  else if(cutKey){cutKey='';cut=null;rebuildBlocks();}
+  // camera
+  if(mode==='hero'){cam.target.x+=(hero.x-cam.target.x)*Math.min(1,dt*6);cam.target.z+=(hero.z-cam.target.z)*Math.min(1,dt*6);}
+  const cp=Math.cos(cam.pitch);camera.position.set(cam.target.x+Math.sin(cam.yaw)*cp*cam.dist,Math.sin(cam.pitch)*cam.dist,cam.target.z+Math.cos(cam.yaw)*cp*cam.dist);camera.lookAt(cam.target.x,.6,cam.target.z);
+  sun.position.set(cam.target.x+28,52,cam.target.z+20);sun.target.position.set(cam.target.x,0,cam.target.z);
+  if(mode==='build'){grid.position.set(Math.round(cam.target.x),.03,Math.round(cam.target.z));}
+  renderer.render(scene,camera);drawOverlay(dt);
+  $('#hpBar').style.width=Math.max(0,hero.hp/hero.maxHp*100)+'%';
+  miniT-=dt;if(miniT<=0){miniT=.25;drawMini();hud();}
+  requestAnimationFrame(frame);}
+requestAnimationFrame(frame);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save();});
+})();
+</script>
+</body>
+</html>
