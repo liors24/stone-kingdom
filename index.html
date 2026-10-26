@@ -5794,7 +5794,10 @@ function stoneDetail(mat){const prev=mat.onBeforeCompile;mat.onBeforeCompile=sh=
  const k0=mat.customProgramCacheKey;mat.customProgramCacheKey=()=>(k0?k0():'')+'stP';return mat;}
 /* image based lighting from a photographed sky (Poly Haven, CC0) */
 const ENVMATS=new Set();
-function loadIBL(){if(!THREE.RGBELoader)return;try{new THREE.RGBELoader().setDataType(THREE.UnsignedByteType).load(ASSET+'sky.hdr',t=>{try{const pm=new THREE.PMREMGenerator(renderer);pm.compileEquirectangularShader();ENVX.env=pm.fromEquirectangular(t).texture;t.dispose();pm.dispose();scene.environment=ENVX.env;envTick();}catch(e){}},undefined,()=>{});}catch(e){}}
+/* binary assets: direct file, or a base64 script copy where binaries can't be served */
+function binURL(name,cb){const viaJs=()=>{const done=()=>{const b=window.SKB&&window.SKB[name];if(!b){cb(null);return;}const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);delete window.SKB[name];cb(URL.createObjectURL(new Blob([u])));};const sc=document.createElement('script');sc.src=ASSET+name+'.js';sc.onload=done;sc.onerror=()=>cb(null);document.head.appendChild(sc);};
+ try{fetch(ASSET+name,{method:'GET'}).then(r=>{if(r.ok)cb(ASSET+name);else viaJs();}).catch(viaJs);}catch(e){viaJs();}}
+function loadIBL(){if(!THREE.RGBELoader)return;try{binURL('sky.hdr',url=>{if(!url)return;new THREE.RGBELoader().setDataType(THREE.UnsignedByteType).load(url,t=>{try{const pm=new THREE.PMREMGenerator(renderer);pm.compileEquirectangularShader();ENVX.env=pm.fromEquirectangular(t).texture;t.dispose();pm.dispose();scene.environment=ENVX.env;envTick();}catch(e){}},undefined,()=>{});});}catch(e){}}
 function envTick(){if(!ENVX.env)return;const k=ENV.day*.75+ENV.dusk*.42+ENV.night*.07;scene.traverse(o=>{const m=o.material;if(!m)return;(Array.isArray(m)?m:[m]).forEach(mm=>{if(mm.isMeshStandardMaterial){if(mm.userData.envK==null)mm.userData.envK=mm.envMapIntensity||1;mm.envMapIntensity=mm.userData.envK*k;}});});ENVX.k=k;}
 let envT=0;function envFrame(dt){envT-=dt;if(envT<=0){envT=2;envTick();}
  waterN.offset.x=T*.006;waterN.offset.y=T*.004;}
@@ -7389,7 +7392,7 @@ function bGunAI(u,dt,ord){const W=WPN[u.def.gun];const R=Math.min(W.brng,72);u.t
 
 /* ================= realistic characters: scanned-style model + motion-captured animation ================= */
 const RC={ready:false,gltf:null,clips:{},k:1,yaw:0,pose:{},mats:{},guns:{}};
-function loadChars(){if(!THREE.GLTFLoader||!THREE.SkeletonUtils)return;try{new THREE.GLTFLoader().load(ASSET+'Soldier.glb',g=>{try{RC.gltf=g;g.animations.forEach(a=>RC.clips[a.name]=a);prepRC();RC.ready=true;refreshReal();}catch(e){console.warn('rc',e);}},undefined,()=>{});}catch(e){}}
+function loadChars(){if(!THREE.GLTFLoader||!THREE.SkeletonUtils)return;try{binURL('Soldier.glb',url=>{if(!url)return;new THREE.GLTFLoader().load(url,g=>{try{RC.gltf=g;g.animations.forEach(a=>RC.clips[a.name]=a);prepRC();RC.ready=true;refreshReal();}catch(e){console.warn('rc',e);}},undefined,()=>{});});}catch(e){}}
 function useReal(u){return RC.ready&&ERA.k==='modern'&&!u.villager;}
 function refreshReal(){for(const u of units)if(u.alive&&u.m&&!!u.m.real!==useReal(u))rebuildUnit(u);}
 const _rv=new THREE.Vector3(),_rv2=new THREE.Vector3(),_rq=new THREE.Quaternion(),_re=new THREE.Euler();
